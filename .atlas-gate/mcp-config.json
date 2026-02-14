@@ -1,0 +1,27 @@
+{
+  "mcp": {
+    "version": "2.0",
+    "sessionManagement": {
+      "enabled": false,
+      "lockingEnabled": false,
+      "requireBeginSession": false,
+      "requireEndSession": false,
+      "enforceSessionExclusivity": false
+    },
+    "gating": {
+      "sessionGate": {
+        "enabled": false
+      },
+      "promptGate": {
+        "enabled": true
+      },
+      "roleGate": {
+        "enabled": true
+      }
+    },
+    "auditLog": {
+      "trackSessions": false,
+      "trackSessionLocks": false
+    }
+  }
+}
