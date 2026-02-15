@@ -342,6 +342,7 @@ Based on user data and case studies:
 │                 │    │                 │    │ (Price Scraping │
 │                 │    │                 │    │  + Sync Jobs)   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+
 ```
 
 ### Project Structure
@@ -384,6 +385,7 @@ pantrypilot/
 ├── tools/                   # Development and deployment tools
 └── .github/                 # CI/CD workflows
     └── workflows/
+
 ```
 
 ## 🚀 Quick Start
@@ -574,15 +576,19 @@ tests/
 
 ```bash
 # All tests
+
 npm test
 
 # Coverage report
+
 npm run test:coverage
 
 # Specific test file
+
 npm test -- inventory.test.js
 
 # Watch mode for development
+
 npm run test:watch
 
 ```
@@ -713,6 +719,7 @@ This project uses **ATLAS-GATE** for strict development governance:
 ## 🤝 Contributing
 
 ### Development Guidelines
+
 1. **Follow ATLAS-GATE governance** - All changes require approved plans
 2. **Write tests** - Maintain >90% code coverage
 3. **Use conventional commits** - Follow semantic versioning
@@ -720,6 +727,7 @@ This project uses **ATLAS-GATE** for strict development governance:
 5. **Documentation** - Update docs for all changes
 
 ### Getting Started
+
 1. Read the [Governance Guide](docs/GOVERNANCE.md)
 2. Set up development environment (see Quick Start)
 3. Create an execution plan for your feature
