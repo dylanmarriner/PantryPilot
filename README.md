@@ -312,7 +312,6 @@ Based on user data and case studies:
 
 ### 👨‍👩‍👧‍👦 **Family Benefits**
 
-
 ## 🏗️ Architecture
 
 ### System Overview
