@@ -7,6 +7,7 @@ PantryPilot is an intelligent household management platform that revolutionizes 
 ## 🎯 The Problem We Solve
 
 Every household faces these daily challenges:
+
 - **Food Waste**: Forgot items in the back of the fridge until they expire
 - **Overbuying**: Purchase duplicates of items you already have
 - **Budget Overruns**: Unexpected price increases and poor shopping decisions
@@ -22,6 +23,7 @@ PantryPilot solves these problems by providing a single, intelligent platform th
 **What it does**: PantryPilot maintains a real-time, comprehensive inventory of every item in your household across all storage locations.
 
 **How it works**:
+
 - **Multi-Location Tracking**: Track items across pantry, fridge, freezer, cupboards, and even secondary storage like garages or basements
 - **Barcode Scanning**: Simply scan product barcodes to instantly add items with all nutritional and categorization data
 - **Voice Input**: "Add 2 liters of milk to the fridge" - natural language processing automatically categorizes and locates items
@@ -31,6 +33,7 @@ PantryPilot solves these problems by providing a single, intelligent platform th
 - **Batch & Lot Tracking**: Track specific purchase batches for precise recall management
 
 **Real-world examples**:
+
 - Scan milk carton → Automatically adds to "Dairy → Refrigerator → Top Shelf" with 7-day expiry
 - Voice input "bought 3 cans of tomatoes" → Adds to "Canned Goods → Pantry → Shelf 2" with 2-year expiry
 - Photo receipt → OCR extracts 15 items and adds them to appropriate locations
