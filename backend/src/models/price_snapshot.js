@@ -107,7 +107,7 @@ module.exports = (sequelize) => {
 
   PriceSnapshot.associate = (models) => {
     // PriceSnapshot belongs to a SKU
-    PriceSnapshot.belongsTo(models.SKU, {
+    PriceSnapshot.belongsTo(models.Sku, {
       foreignKey: 'sku_id',
       as: 'sku',
     });

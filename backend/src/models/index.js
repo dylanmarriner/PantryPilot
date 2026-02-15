@@ -1,52 +1,85 @@
+const { sequelize } = require('../config/database');
 const { Sequelize } = require('sequelize');
-const config = require('../../config/database')[process.env.NODE_ENV || 'development'];
 
-// Initialize Sequelize
-const sequelize = new Sequelize(config);
+// Import all models
+const SyncTransaction = require('./sync_transaction');
+const Item = require('./item');
+const StockEntry = require('./stock_entry');
+const Household = require('./household');
+const Store = require('./store');
+const PriceSnapshot = require('./price_snapshot');
+const Sku = require('./sku');
+const MealLog = require('./meal_log');
+const MealIngredient = require('./meal_ingredient');
+const ItemPreference = require('./item_preference');
+const AcceptanceScore = require('./acceptance_score');
+const FatigueScore = require('./fatigue_score');
 
-// Import models
-const Household = require('./household')(sequelize);
-const User = require('./user')(sequelize);
-const Item = require('./item')(sequelize);
-const StockEntry = require('./stock_entry')(sequelize);
-const Store = require('./store')(sequelize);
-const SKU = require('./sku')(sequelize);
-const PriceSnapshot = require('./price_snapshot')(sequelize);
-const MealTemplate = require('./meal_template')(sequelize);
-const MealIngredient = require('./meal_ingredient')(sequelize);
-const MealLog = require('./meal_log')(sequelize);
+// New PHASE_9 models
+const User = require('./user');
+const Role = require('./role');
+const UserHousehold = require('./user_household');
+const FeatureFlag = require('./feature_flag');
+const UsageAnalytics = require('./usage_analytics');
 
-// Extract Category and Location from Item module
-const Category = require('./item').Category(sequelize);
-const Location = require('./item').Location(sequelize);
+// Initialize models that need the function pattern (return functions)
+const UserInstance = User(sequelize, Sequelize.DataTypes);
+const RoleInstance = Role(sequelize, Sequelize.DataTypes);
+const UserHouseholdInstance = UserHousehold(sequelize, Sequelize.DataTypes);
+const FeatureFlagInstance = FeatureFlag(sequelize, Sequelize.DataTypes);
+const UsageAnalyticsInstance = UsageAnalytics(sequelize, Sequelize.DataTypes);
 
-// Define associations
-Household.associate({ User, Item, StockEntry });
-User.associate({ Household, StockEntry });
-Item.associate({ Household, StockEntry, SKU, Category, Location });
-StockEntry.associate({ Household, Item, User });
-Store.associate({ SKU, PriceSnapshot });
-SKU.associate({ Item, Store, PriceSnapshot });
-PriceSnapshot.associate({ SKU, Store });
-Category.associate({ Household, Item });
-Location.associate({ Household, Item });
-MealTemplate.associate({ User, MealIngredient, MealLog });
-MealIngredient.associate({ MealTemplate, Item });
-MealLog.associate({ MealTemplate, User });
+const HouseholdInstance = Household(sequelize);
+const ItemInstance = Item(sequelize, Sequelize.DataTypes);
+const StockEntryInstance = StockEntry(sequelize, Sequelize.DataTypes);
+const StoreInstance = Store(sequelize, Sequelize.DataTypes);
+const PriceSnapshotInstance = PriceSnapshot(sequelize, Sequelize.DataTypes);
+const SkuInstance = Sku(sequelize, Sequelize.DataTypes);
+const MealLogInstance = MealLog(sequelize, Sequelize.DataTypes);
+const MealIngredientInstance = MealIngredient(sequelize, Sequelize.DataTypes);
+
+// Models that are already defined (direct exports)
+const SyncTransactionInstance = SyncTransaction;
+const ItemPreferenceInstance = ItemPreference;
+const AcceptanceScoreInstance = AcceptanceScore;
+const FatigueScoreInstance = FatigueScore;
+
+// Setup associations
+const setupAssociations = () => {
+  const models = {
+    User: UserInstance,
+    Role: RoleInstance,
+    UserHousehold: UserHouseholdInstance,
+    FeatureFlag: FeatureFlagInstance,
+    UsageAnalytics: UsageAnalyticsInstance,
+    Household: HouseholdInstance,
+    SyncTransaction: SyncTransactionInstance,
+    Item: ItemInstance,
+    StockEntry: StockEntryInstance,
+    Store: StoreInstance,
+    PriceSnapshot: PriceSnapshotInstance,
+    Sku: SkuInstance,
+    MealLog: MealLogInstance,
+    MealIngredient: MealIngredientInstance,
+    ItemPreference: ItemPreferenceInstance,
+    AcceptanceScore: AcceptanceScoreInstance,
+    FatigueScore: FatigueScoreInstance
+  };
+
+  // Call associate methods for all models
+  Object.values(models).forEach(model => {
+    if (typeof model.associate === 'function') {
+      model.associate(models);
+    }
+  });
+
+  return models;
+};
+
+const models = setupAssociations();
 
 module.exports = {
   sequelize,
   Sequelize,
-  Household,
-  User,
-  Item,
-  StockEntry,
-  Store,
-  SKU,
-  PriceSnapshot,
-  Category,
-  Location,
-  MealTemplate,
-  MealIngredient,
-  MealLog,
+  ...models
 };

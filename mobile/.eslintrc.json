@@ -1,0 +1,27 @@
+{
+  "root": true,
+  "extends": [
+    "eslint:recommended"
+  ],
+  "env": {
+    "es6": true,
+    "node": true,
+    "jest": true
+  },
+  "globals": {
+    "__DEV__": true,
+    "localStorage": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "off",
+    "no-undef": "off"
+  }
+}

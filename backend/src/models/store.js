@@ -63,7 +63,7 @@ module.exports = (sequelize) => {
 
   Store.associate = (models) => {
     // Store has many SKUs
-    Store.hasMany(models.SKU, {
+    Store.hasMany(models.Sku, {
       foreignKey: 'store_id',
       as: 'skus',
     });

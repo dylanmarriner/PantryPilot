@@ -80,10 +80,6 @@ module.exports = (sequelize) => {
   });
 
   MealIngredient.associate = (models) => {
-    MealIngredient.belongsTo(models.MealTemplate, {
-      foreignKey: 'mealTemplateId',
-      as: 'mealTemplate'
-    });
     MealIngredient.belongsTo(models.Item, {
       foreignKey: 'ingredientId',
       as: 'ingredient'

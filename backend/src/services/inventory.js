@@ -285,6 +285,208 @@ class InventoryService {
   }
 
   /**
+   * Adjust inventory for an item (add or deduct)
+   * @param {Object} params - Adjustment parameters
+   * @returns {Promise<Object>} Adjustment result
+   */
+  async adjustInventory(params) {
+    const {
+      userId,
+      itemId,
+      adjustment,
+      reason = null,
+      cost = null,
+      version = null
+    } = params;
+
+    const transaction = await sequelize.transaction();
+
+    try {
+      const item = await Item.findByPk(itemId, { transaction });
+      if (!item) {
+        throw new Error('Item not found');
+      }
+
+      // Determine operation type based on adjustment value
+      const operationType = adjustment > 0 ? 'add' : 'deduct';
+      const quantity = Math.abs(adjustment);
+
+      const stockEntry = await StockEntry.create({
+        item_id: itemId,
+        user_id: userId,
+        quantity_base: quantity,
+        unit_type: item.preferred_unit,
+        base_unit: item.preferred_unit,
+        operation_type: operationType,
+        reason,
+        purchase_price_cents: cost,
+      }, { transaction });
+
+      await transaction.commit();
+
+      const currentStock = await this.getCurrentStock(itemId);
+      return {
+        success: true,
+        stockEntry: stockEntry.toJSON(),
+        current_stock: currentStock,
+        version: version || 1
+      };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Create a new item
+   * @param {Object} params - Item creation parameters
+   * @returns {Promise<Object>} Created item
+   */
+  async createItem(params) {
+    const {
+      userId,
+      name,
+      category,
+      initialQuantity = 0,
+      cost = null,
+      version = 1
+    } = params;
+
+    try {
+      const item = await Item.create({
+        name,
+        category: category || 'Other',
+        household_id: userId
+      });
+
+      if (initialQuantity > 0) {
+        await this.addStock({
+          item_id: item.id,
+          user_id: userId,
+          quantity: initialQuantity,
+          unit: 'unit',
+          reason: 'Initial stock',
+          purchase_price_cents: cost
+        });
+      }
+
+      return {
+        success: true,
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        quantity: initialQuantity,
+        version
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get an item by ID
+   * @param {string} userId - User ID
+   * @param {string} itemId - Item ID
+   * @returns {Promise<Object>} Item with version
+   */
+  async getItem(userId, itemId) {
+    try {
+      const item = await Item.findByPk(itemId);
+      if (!item) {
+        return null;
+      }
+
+      const currentStock = await this.getCurrentStock(itemId);
+
+      return {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        quantity: currentStock,
+        version: 1
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Update an item
+   * @param {Object} params - Update parameters
+   * @returns {Promise<Object>} Updated item
+   */
+  async updateItem(params) {
+    const {
+      userId,
+      itemId,
+      updates,
+      version = 1
+    } = params;
+
+    try {
+      const item = await Item.findByPk(itemId);
+      if (!item) {
+        throw new Error('Item not found');
+      }
+
+      const allowedUpdates = ['name', 'category', 'preferred_unit'];
+      const updateData = {};
+
+      for (const key of allowedUpdates) {
+        if (updates[key] !== undefined) {
+          updateData[key] = updates[key];
+        }
+      }
+
+      await item.update(updateData);
+
+      const currentStock = await this.getCurrentStock(itemId);
+
+      return {
+        success: true,
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        quantity: currentStock,
+        version
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an item
+   * @param {Object} params - Delete parameters
+   * @returns {Promise<Object>} Deletion result
+   */
+  async deleteItem(params) {
+    const {
+      userId,
+      itemId,
+      version = 1
+    } = params;
+
+    try {
+      const item = await Item.findByPk(itemId);
+      if (!item) {
+        throw new Error('Item not found');
+      }
+
+      await item.destroy();
+
+      return {
+        success: true,
+        deleted: true,
+        itemId,
+        version
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Check for items that need reordering
    * @param {string} householdId - Household ID
    * @returns {Promise<Array>} Items below minimum quantity

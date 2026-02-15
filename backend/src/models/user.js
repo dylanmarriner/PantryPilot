@@ -1,132 +1,105 @@
-const { DataTypes } = require('sequelize');
-const bcrypt = require('bcrypt');
+'use strict';
 
-/**
- * User model - represents a user in the system
- * Users belong to a household and can have different roles
- */
-module.exports = (sequelize) => {
-  const User = sequelize.define('User', {
+const { Model } = require('sequelize');
+
+module.exports = (sequelize, DataTypes) => {
+  class User extends Model {
+    static associate(models) {
+      User.belongsToMany(models.Household, {
+        through: models.UserHousehold,
+        foreignKey: 'userId',
+        otherKey: 'householdId',
+        as: 'households'
+      });
+      
+      User.hasMany(models.UserHousehold, {
+        foreignKey: 'userId',
+        as: 'userHouseholds'
+      });
+    }
+
+    async hasHouseholdAccess(householdId) {
+      const userHousehold = await sequelize.models.UserHousehold.findOne({
+        where: {
+          userId: this.id,
+          householdId: householdId
+        }
+      });
+      return !!userHousehold;
+    }
+
+    async getRoleInHousehold(householdId) {
+      const userHousehold = await sequelize.models.UserHousehold.findOne({
+        where: {
+          userId: this.id,
+          householdId: householdId
+        },
+        include: [{
+          model: sequelize.models.Role,
+          as: 'role'
+        }]
+      });
+      return userHousehold?.role;
+    }
+  }
+
+  User.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
+      primaryKey: true
     },
     email: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
       validate: {
-        isEmail: true,
-        notEmpty: true,
-      },
+        isEmail: true
+      }
     },
-    password_hash: {
+    passwordHash: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-      },
+      allowNull: false
     },
-    name: {
+    firstName: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [1, 100],
-      },
+      allowNull: false
     },
-    role: {
-      type: DataTypes.ENUM('admin', 'member', 'viewer'),
-      allowNull: false,
-      defaultValue: 'member',
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
-    household_id: {
-      type: DataTypes.UUID,
-      allowNull: false,
-      references: {
-        model: 'households',
-        key: 'id',
-      },
-      onUpdate: 'CASCADE',
-      onDelete: 'CASCADE',
-    },
-    preferences: {
-      type: DataTypes.JSONB,
-      allowNull: true,
-      defaultValue: {},
-    },
-    is_active: {
+    isActive: {
       type: DataTypes.BOOLEAN,
-      allowNull: false,
-      defaultValue: true,
+      defaultValue: true
     },
-    last_login_at: {
-      type: DataTypes.DATE,
-      allowNull: true,
+    lastLoginAt: {
+      type: DataTypes.DATE
     },
-    created_at: {
+    createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
+      defaultValue: DataTypes.NOW
     },
-    updated_at: {
+    updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW,
-    },
+      defaultValue: DataTypes.NOW
+    }
   }, {
+    sequelize,
+    modelName: 'User',
     tableName: 'users',
     timestamps: true,
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
     indexes: [
       {
-        fields: ['email'],
-        unique: true,
+        fields: ['email']
       },
       {
-        fields: ['household_id'],
-      },
-    ],
-    hooks: {
-      beforeCreate: async (user) => {
-        if (user.password_hash) {
-          user.password_hash = await bcrypt.hash(user.password_hash, 10);
-        }
-      },
-      beforeUpdate: async (user) => {
-        if (user.changed('password_hash')) {
-          user.password_hash = await bcrypt.hash(user.password_hash, 10);
-        }
-      },
-    },
+        fields: ['isActive']
+      }
+    ]
   });
-
-  User.associate = (models) => {
-    // User belongs to a household
-    User.belongsTo(models.Household, {
-      foreignKey: 'household_id',
-      as: 'household',
-    });
-    
-    // User has many stock entries
-    User.hasMany(models.StockEntry, {
-      foreignKey: 'user_id',
-      as: 'stockEntries',
-    });
-  };
-
-  // Instance methods
-  User.prototype.validatePassword = async function(password) {
-    return bcrypt.compare(password, this.password_hash);
-  };
-
-  User.prototype.toJSON = function() {
-    const values = Object.assign({}, this.get());
-    delete values.password_hash;
-    return values;
-  };
 
   return User;
 };

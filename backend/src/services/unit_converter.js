@@ -86,51 +86,51 @@ class UnitConverter {
     
     // Handle common variations
     switch (normalized) {
-      case 'grams':
-      case 'gram':
-        return 'g';
-      case 'kilograms':
-      case 'kilogram':
-        return 'kg';
-      case 'liters':
-      case 'liter':
-      case 'l':
-        return 'L';
-      case 'milliliters':
-      case 'milliliter':
-        return 'ml';
-      case 'ounces':
-        return 'oz';
-      case 'pounds':
-        return 'lb';
-      case 'fluid ounces':
-      case 'fluid ounce':
-        return 'fl_oz';
-      case 'tablespoons':
-      case 'tablespoon':
-        return 'tbsp';
-      case 'teaspoons':
-      case 'teaspoon':
-        return 'tsp';
-      case 'cups':
-        return 'cup';
-      case 'pints':
-        return 'pint';
-      case 'quarts':
-        return 'quart';
-      case 'gallons':
-        return 'gallon';
-      case 'pieces':
-        return 'piece';
-      case 'pcs':
-      case 'pc':
-        return 'piece';
-      case 'items':
-        return 'item';
-      case 'units':
-        return 'unit';
-      default:
-        return normalized;
+    case 'grams':
+    case 'gram':
+      return 'g';
+    case 'kilograms':
+    case 'kilogram':
+      return 'kg';
+    case 'liters':
+    case 'liter':
+    case 'l':
+      return 'L';
+    case 'milliliters':
+    case 'milliliter':
+      return 'ml';
+    case 'ounces':
+      return 'oz';
+    case 'pounds':
+      return 'lb';
+    case 'fluid ounces':
+    case 'fluid ounce':
+      return 'fl_oz';
+    case 'tablespoons':
+    case 'tablespoon':
+      return 'tbsp';
+    case 'teaspoons':
+    case 'teaspoon':
+      return 'tsp';
+    case 'cups':
+      return 'cup';
+    case 'pints':
+      return 'pint';
+    case 'quarts':
+      return 'quart';
+    case 'gallons':
+      return 'gallon';
+    case 'pieces':
+      return 'piece';
+    case 'pcs':
+    case 'pc':
+      return 'piece';
+    case 'items':
+      return 'item';
+    case 'units':
+      return 'unit';
+    default:
+      return normalized;
     }
   }
 
@@ -200,17 +200,17 @@ class UnitConverter {
     // Determine base unit
     let baseUnit;
     switch (unitType) {
-      case 'weight':
-        baseUnit = 'g';
-        break;
-      case 'volume':
-        baseUnit = 'ml';
-        break;
-      case 'count':
-        baseUnit = 'count';
-        break;
-      default:
-        baseUnit = 'count';
+    case 'weight':
+      baseUnit = 'g';
+      break;
+    case 'volume':
+      baseUnit = 'ml';
+      break;
+    case 'count':
+      baseUnit = 'count';
+      break;
+    default:
+      baseUnit = 'count';
     }
 
     return {
@@ -285,7 +285,7 @@ class UnitConverter {
    */
   convert(quantity, fromUnit, toUnit, preferredUnit = null) {
     // Convert to base unit first
-    const { quantityBase, unitType } = this.toBaseUnit(quantity, fromUnit, preferredUnit);
+    const { quantityBase } = this.toBaseUnit(quantity, fromUnit, preferredUnit);
     
     // Then convert from base unit to target
     return this.fromBaseUnit(quantityBase, toUnit, preferredUnit);

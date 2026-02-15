@@ -308,18 +308,18 @@ class PricingService {
    */
   convertToBaseUnit(size, unit) {
     switch (unit) {
-      case 'kg':
-        return size * 1000; // Convert to grams
-      case 'g':
-        return size; // Already in grams
-      case 'L':
-        return size * 1000; // Convert to milliliters
-      case 'ml':
-        return size; // Already in milliliters
-      case 'count':
-        return size; // Count units are as-is
-      default:
-        throw new Error(`Unknown unit: ${unit}`);
+    case 'kg':
+      return size * 1000; // Convert to grams
+    case 'g':
+      return size; // Already in grams
+    case 'L':
+      return size * 1000; // Convert to milliliters
+    case 'ml':
+      return size; // Already in milliliters
+    case 'count':
+      return size; // Count units are as-is
+    default:
+      throw new Error(`Unknown unit: ${unit}`);
     }
   }
 }

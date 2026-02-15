@@ -1,4 +1,5 @@
-const { Sequelize, Op } = require('sequelize');
+const { Op } = require('sequelize');
+const ScraperService = require('../services/scraper_service');
 
 /**
  * Nightly Sync Job - Performs nightly data synchronization tasks
@@ -8,6 +9,7 @@ class NightlySyncJob {
   constructor(models, logger = console) {
     this.models = models;
     this.logger = logger;
+    this.scraperService = new ScraperService();
   }
 
   /**
@@ -27,6 +29,11 @@ class NightlySyncJob {
     this.logger.info('Starting nightly sync job...');
 
     try {
+      // Task 0: Scrape supermarket prices (Phase 7)
+      if (options.enableScraping !== false) {
+        results.tasks.scraping = await this.scrapeSupermarketPrices(options.scrapingOptions || {});
+      }
+
       // Task 1: Clean up old price snapshots
       results.tasks.cleanupOldPrices = await this.cleanupOldPriceSnapshots(options.retentionDays || 90);
 
@@ -62,6 +69,34 @@ class NightlySyncJob {
     }
 
     return results;
+  }
+
+  /**
+   * Scrape supermarket prices from all supported stores
+   * @param {Object} options - Scraping options
+   * @returns {Object} Scraping results
+   */
+  async scrapeSupermarketPrices(options = {}) {
+    try {
+      this.logger.info('Starting supermarket price scraping...');
+      
+      await this.scraperService.initialize();
+      const scrapingResults = await this.scraperService.scrapeAllStores(options);
+      await this.scraperService.cleanup();
+      
+      this.logger.info(`Supermarket scraping completed. Total products scraped: ${scrapingResults.totalProducts || 0}`);
+      
+      return {
+        success: true,
+        ...scrapingResults
+      };
+    } catch (error) {
+      this.logger.error('Supermarket price scraping failed:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
   }
 
   /**
