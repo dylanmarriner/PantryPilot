@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/services/auth';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 export default function App() {
+  useEffect(() => {
+    console.log('[DEBUG] App: COMPONENT MOUNTED');
+  }, []);
+
+  console.log('[DEBUG] App: RENDERING');
+
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppNavigator />
-      </NavigationContainer>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#050505" />
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
