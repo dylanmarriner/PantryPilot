@@ -1,112 +1,178 @@
 # 🧭 PantryPilot
 
 [![Status](https://img.shields.io/badge/Status-Phase_9_Complete-success?style=for-the-badge)](docs/roadmap.md)
-[![Deployment](https://img.shields.io/badge/Deployed-Render.com-blue?style=for-the-badge)](https://pantrypilot-api.onrender.com/health)
+[![Deployment](https://img.shields.io/badge/Primary_Deployment-Render.com-blue?style=for-the-badge)](https://pantrypilot-api.onrender.com/health)
+[![Failover](https://img.shields.io/badge/Failover-VPS_Ubuntu_24.04-orange?style=for-the-badge)](http://100.93.214.100:3000/health)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![Build](https://img.shields.io/badge/Stack-Node/React_Native/SQLite-cyan?style=for-the-badge)]()
 
-**PantryPilot** is a grocery-first household intelligence platform designed to eliminate food waste and automate meal orchestration. It combines a robust inventory engine with AI-powered interpretation and a premium mobile experience.
-
----
-
-## 🚀 Key Features
-
-- **Modern Inventory Tracking**: Deterministic stock management with unit normalization (g, kg, ml, L, jars).
-- **AI interpretation Layer**: Natural language and voice logging for ultra-fast kitchen interactions.
-- **Lunch Variation Engine**: Intelligent rotation to prevent "lunch fatigue" while optimizing for stock levels and price.
-- **Pricing Engine**: Live price tracking and budget optimization for New Zealand supermarkets.
-- **Hybrid Sync**: Seamless offline/online transition for reliable usage in low-connectivity areas.
-- **Secure Deployment**: Automated SSL-enabled hosting on Render.com with a high-performance VPS failover.
+**PantryPilot** is an advanced, grocery-first household intelligence platform. It moves beyond simple list-making into **deterministic inventory orchestration**, utilizing natural language interpretation and fatigue-aware recommendation engines to automate the domestic supply chain.
 
 ---
 
-## 🏗 Architecture
+## 🏗️ System Architecture & Internals
 
-PantryPilot is built as a modular monorepo, ensuring strict separation of concerns and high scalability.
+PantryPilot is designed as a modular monorepo with strict decoupling between the interpretation layer and the deterministic engine.
+
+### 🧩 High-Level Component Topology
 
 ```mermaid
 graph TD
-    User([User]) <--> Mobile[Mobile Client: React Native/Expo]
-    Mobile <--> API[API Gateway: Render.com/VPS]
-    API <--> Backend[Backend Services: Node.js/Express]
-    Backend <--> DB[(SQLite Database)]
-    Backend <--> Workers[Scraping Workers: Playwright]
-    Backend <--> AI[AI Layer: LLM Interpretation]
+    %% Clients
+    User([User Context]) <--> Mobile[Mobile Client: Expo/React Native]
+
+    %% Gateway/Auth
+    Mobile -- "Encrypted JWT" --> Proxy[Caddy/Nginx Gateway]
+    Proxy --> Backend[Express.js API Node]
+
+    %% Logic Layers
+    subgraph "Core Intelligence Engine"
+        Backend --> AI[AI Service: NL Interpretation]
+        Backend --> Lunch[Rotation Engine: Fatigue Management]
+        Backend --> Inv[Inventory Service: Unit Normalization]
+    end
+
+    %% Persistence
+    Inv <--> DB[(SQLite Persistence)]
+    Lunch <--> DB
+
+    %% Background Workers
+    Workers[Scraping Workers: Playwright] -- "Price Snapshots" --> DB
 ```
-
-### Components
-
-- **[Backend](backend/README.md)**: Node.js/Express API with SQLite/Sequelize persistence.
-- **[Mobile Client](mobile/README.md)**: Premium Android application optimized for readability and speed.
-- **Workers**: Automated background tasks for price scraping and data normalization.
-- **Governance**: Managed via the [ATLAS-GATE v2](docs/GOVERNANCE.md) system.
 
 ---
 
-## 🛠 Tech Stack
+## 🧠 Core Intelligence Modules
 
-| Layer              | Technologies                                             |
-| :----------------- | :------------------------------------------------------- |
-| **Frontend**       | React Native, Expo, Lucide Icons, Custom Design System   |
-| **Backend**        | Node.js, Express, Sequelize, JWT, Docker                 |
-| **Infrastructure** | Render.com, Ubuntu 24.04 VPS, Caddy/Nginx                |
-| **Database**       | SQLite3 (Persistent via volume mounts/excluded tarballs) |
-| **AI**             | OpenAI/Claude for NL Component Interpretation            |
+### 1. Deterministic Unit Normalization (`UnitConverter`)
+
+Unlike traditional apps that store strings, PantryPilot uses a **Base-Unit Normalization** strategy using **Integer Math** to avoid floating-point drift.
+
+- **Weight Base**: Grams (g)
+- **Volume Base**: Milliliters (ml)
+- **Count Base**: Absolute units
+- **Ambiguity Resolver**: Handles "oz" (ounce) contextually—converts to `weight` (g) or `volume` (ml) based on the target item's metadata.
+
+### 2. Lunch Rotation & Fatigue Engine (`LunchEngine`)
+
+To prevent "lunch boredom," the engine calculates an **Acceptance Score** for every item:
+$$Score = (Preference \times 0.4) + (FatiguePenalty \times 0.3) + (StockBonus \times 0.2) + (Freshness \times 0.1)$$
+
+- **Fatigue Management**: Items accumulate "fatigue" points per use, which decay over a 7-day cooldown period.
+- **Deterministic Randomness**: Recommendations are sorted using a seeded-random hash to ensure consistent options within a 24-hour window.
+
+### 3. Asynchronous Sync Protocol (`SyncQueue`)
+
+The mobile client implements a robust, idempotent transaction log.
+
+- **State Machine**: `PENDING` → `IN_PROGRESS` → `COMPLETED` | `FAILED`.
+- **Conflict Resolution**: Client-side timestamps act as versions; the backend uses a "Last-Writer-Wins" strategy for concurrent household updates.
+- **Persistence**: AsyncStorage-backed queue survives app restarts and OS-level process kills.
 
 ---
 
-## 📦 Deployment & Setup
+## 🎨 Design System & UI Philosophy
 
-### Automated Deployment (Render.com)
+PantryPilot uses a **High-Contrast "Glassmorphism"** design system defined in `DesignSystem.js`.
 
-The project is configured for continuous deployment. Every push to `main` triggers a Docker-based build on Render.
+- **Primary Canvas**: `#050505` (True Black) for OLED efficiency.
+- **Accent Palette**:
+  - `Cyan-500` (#22d3ee) for interactive actions.
+  - `Fuchsia-500` (#d946ef) for AI/Premium features.
+- **Visual Tokens**:
+  - `Cards`: 40% opacity Zinc-900 with subtle background blur.
+  - `Borders`: 10% white for delicate structure without clutter.
 
-- **Endpoint**: `https://pantrypilot-api.onrender.com`
+---
 
-### Native Development Setup
+## 📡 API Reference
 
-1. **Clone & Install**:
+### Authentication
+
+| Method | Endpoint             | Description                              |
+| :----- | :------------------- | :--------------------------------------- |
+| `POST` | `/api/auth/login`    | Returns JWT and Household Context        |
+| `POST` | `/api/auth/register` | Initializes new user + default Household |
+
+### Inventory Management
+
+| Method | Endpoint                    | Description                               |
+| :----- | :-------------------------- | :---------------------------------------- |
+| `GET`  | `/api/inventory`            | List all items with normalized quantities |
+| `POST` | `/api/inventory/adjustment` | Atomic quantity update (supports NL)      |
+| `GET`  | `/api/inventory/low-stock`  | Retrieve items below reorder threshold    |
+
+### AI & Strategy
+
+| Method | Endpoint             | Description                                              |
+| :----- | :------------------- | :------------------------------------------------------- |
+| `POST` | `/api/ai/interpret`  | Parse NL (e.g., "Ate 200g of beef") into structured JSON |
+| `GET`  | `/api/meals/suggest` | Get top-scored meal recommendations                      |
+
+---
+
+## 📦 Deployment & DevOps
+
+PantryPilot features a **Dual-Active Deployment** strategy.
+
+### Primary: Render.com (Cloud Native)
+
+- **Engine**: Docker (Multi-stage build).
+- **Storage**: Persistent Disk (mounted at `/data`).
+- **Networking**: Automated TLS via Cloudflare/Render.
+
+### Failover: Self-Hosted VPS (Ubuntu 24.04)
+
+- **Management**: `./tools/deploy_vps.sh`.
+- **Strategy**: Excludes `.sqlite` and `.env` to prevent state loss during code updates.
+- **Reverse Proxy**: Nginx/Caddy handling port 3000 mapping.
+
+---
+
+## 🛠️ Development Setup
+
+### System Prerequisites
+
+- **Node.js**: v18.17+ (LTS recommended)
+- **Native**: Watchman (macOS/Linux), Android Studio (for Emulators)
+- **Database**: SQLite3 binary installed
+
+### Installation Flow
+
+1. **Initialize Workspace**:
    ```bash
-   git clone https://github.com/dylanmarriner/PantryPilot
-   cd PantryPilot
-   npm install
+   npm run bootstrap # Installs all monorepo dependencies
    ```
-2. **Launch Backend**:
+2. **Setup Environment**:
    ```bash
-   cd backend && npm run dev
+   cp .env.example .env
+   # Populate JWT_SECRET and NODE_ENV
    ```
-3. **Launch Mobile**:
+3. **Database Migration**:
    ```bash
-   cd mobile && npx expo start
+   cd backend && npx sequelize-cli db:migrate
    ```
-
-### VPS Deployment (Manual Fallback)
-
-A secure deployment script is available for manual VPS management:
-
-```bash
-./tools/deploy_vps.sh
-```
-
-_Note: This script automatically preserves your production database and environment variables._
+4. **Boot Development**:
+   ```bash
+   npm run dev:all # Concurrent boot of Backend + Mobile
+   ```
 
 ---
 
 ## 🧭 Roadmap & Governance
 
-We follow a strict, phase-gated roadmap. Current status: **Phase 9 (Product Expansion) - Completed**.
+We adhere to the **ATLAS-GATE v2** governance model. Every phase is cryptographically signed and verified before implementation.
 
-Detailed progress and feature breakdowns can be found in:
-
-- [🧭 Master Roadmap](docs/roadmap.md)
-- [⚖️ Governance Model](docs/GOVERNANCE.md)
-- [📜 Implementation Log](docs/plans/)
+- **Current Progress**: [docs/roadmap.md](docs/roadmap.md)
+- **Active Plan**: [docs/plans/](docs/plans/)
+- **Governance**: [docs/GOVERNANCE.md](docs/GOVERNANCE.md)
 
 ---
 
-## 📄 License
+## 📄 License & Attribution
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Licensed under the **MIT License**. Created with ❤️ by the PantryPilot Engineering Team.
 
 ---
 
-_Built with ❤️ by the PantryPilot Team_
+_PantryPilot - Because your kitchen should be as smart as your code._

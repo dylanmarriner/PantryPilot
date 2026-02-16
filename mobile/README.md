@@ -1,67 +1,72 @@
-# PantryPilot Mobile
+# 📱 PantryPilot Mobile
 
-The mobile client for PantryPilot, built with React Native and Expo. Designed for high readability and fast logging in a kitchen environment.
-
-## Features
-
-- **Inventory Dashboard**: Real-time view of pantry and fridge stock.
-- **AI-Powered Logging**: Natural language and voice input for tracking groceries.
-- **Lunch Planner**: Intelligent rotation system to avoid school lunch boredom.
-- **Offline Support**: Sync queue for logging even when the connection is unstable.
-- **Premium UI**: Modern, high-contrast design system optimized for readability.
-
-## Tech Stack
-
-- **Framework**: React Native (Expo)
-- **Navigation**: React Navigation
-- **State Management**: React Hooks & Context API
-- **Icons**: Lucide React Native
-- **Styling**: Custom Design System (DesignSystem.js)
-
-## Project Structure
-
-```text
-mobile/
-├── src/
-│   ├── components/    # Reusable UI elements
-│   ├── navigation/    # App flow and routing
-│   ├── screens/       # Full-page views
-│   ├── services/      # API communication (api.js)
-│   ├── styles/        # Design System and global styles
-│   └── utils/         # Sync queue and helpers
-└── assets/            # App icons, splash screens, and fonts
-```
-
-## Development
-
-### Prerequisites
-
-- Node.js (v18+)
-- Expo Go app on your physical device or an emulator.
-
-### Setup
-
-1. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-2. Start the Expo development server:
-
-   ```bash
-   npx expo start
-   ```
-
-3. Scan the QR code with Expo Go to run on your device.
-
-## Production Build
-
-The mobile app is built using EAS (Expo Application Services).
-
-- **Android**: Generated as a standalone APK.
-- **Configuration**: Managed via `app.json` and `eas.json`.
+A premium, high-performance Android client built with **React Native** and **Expo**. Optimized for high-speed logging in ambient kitchen environments.
 
 ---
 
-_Part of the PantryPilot Monorepo_
+## 💎 Design System & UI Tokens
+
+The UI implements a custom, high-contrast "Glassmorphism" system defined in `DesignSystem.js`.
+
+### Color Palette
+
+- **Canvas**: `#050505` (Deep OLED Black)
+- **Glass**: `rgba(24, 24, 27, 0.4)` (Zinc-900 at 40% opacity)
+- **Interface**: `Cyan-500` (#22d3ee) & `Fuchsia-500` (#d946ef)
+
+### Tokens
+
+- **Backdrop Blur**: 12px Gaussian blur on all cards.
+- **Border Radius**: Geometric consistency (SM: 8, MD: 12, LG: 16).
+- **Typography**: Optimized for arm-length readability (Large headers, high contrast secondary text).
+
+---
+
+## 🔄 State & Sync Architecture
+
+PantryPilot Mobile uses a **Local-First, Cloud-Synced** architecture to ensure 100% availability in kitchens with poor Wi-Fi.
+
+### `SyncQueue` Implementation
+
+- **Queue Storage**: Persistent `AsyncStorage` transaction log.
+- **Idempotency**: Every operation (Adjustment, Create, Delete) has a `clientId` to prevent duplicated updates on the server.
+- **Failure Recovery**: Auto-retry logic with exponential backoff for `FAILED` status operations.
+
+### Navigation Hierarchy
+
+- **Auth Stack**: Dedicated flow for Login/Session recovery.
+- **Main Tabs**:
+  - **Dashboard**: High-level inventory KPI cards.
+  - **Log Activity**: Core interaction point (Text/Voice/Mic).
+  - **Lunch Planner**: The heuristic rotation interface.
+  - **Settings**: Household and user configuration.
+
+---
+
+## 🛠️ Internal Workflow
+
+### Development
+
+1. **Dependencies**: `npm install`.
+2. **Server**: `npx expo start`.
+3. **Target**: Scan QR code via **Expo Go** (Android/iOS).
+
+### Production Build (EAS)
+
+Builds are orchestrated via **Expo Application Services (EAS)**.
+
+- **Profile**: `production` (Configured in `eas.json`).
+- **Artifact**: Standard APK (`build.gradles` managed by Expo Prebuild).
+- **Environment**: Bundles the production API endpoint (`pantrypilot-api.onrender.com`).
+
+---
+
+## 📜 Key Service Modules
+
+- **`api.js`**: Centralized Axios instance with interceptors for JWT injection and base-URL management.
+- **`DesignSystem.js`**: Atomic design tokens for cross-component consistency.
+- **`SyncQueue.js`**: The critical persistence layer for offline logging.
+
+---
+
+_Designed for the cook. Optimized for the home._
