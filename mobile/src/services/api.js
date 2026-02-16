@@ -2,8 +2,8 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_BASE_URL = __DEV__
-  ? "http://46.225.123.89:3000/api"
-  : "http://46.225.123.89:3000/api";
+  ? "https://pantrypilot-api.onrender.com/api"
+  : "https://pantrypilot-api.onrender.com/api";
 
 class ApiService {
   constructor() {
