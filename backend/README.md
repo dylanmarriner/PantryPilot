@@ -1,87 +1,85 @@
-# ⚙️ PantryPilot Backend
+# PantryPilot Backend
 
-The robust intelligence hub for the PantryPilot ecosystem. Engineered for deterministic accuracy, multi-tenant security, and high-availability deployment.
+The primary intelligence and persistence hub for the PantryPilot ecosystem. This service is engineered for deterministic inventory accuracy, high-concurrency security, and multi-tenant household management.
 
 ---
 
-## 🏗️ Architecture & Component Map
+## Architecture and Component Map
 
-The backend follows a **Control-Service-Model** pattern, enforcing strict separation between request orchestration and business logic.
+The backend implements a Control-Service-Model pattern, ensuring a decoupling of request orchestration from the core business logic.
 
 ```text
 src/
-├── controllers/    # Request orchestration & HTTP state
-├── middleware/     # Security pipeline (JWT, Admin, Limits)
-├── models/         # Sequelize ORM blueprints (SQLite)
-├── routes/         # Express endpoint definitions
-├── services/       # Core Business Logic (The "Brain")
-└── utils/          # Specialized engines (NL Action Extraction)
+├── controllers/    # Request orchestration and HTTP state management.
+├── middleware/     # Security pipeline including JWT verification and validation.
+├── models/         # Sequelize ORM definitions for SQLite persistence.
+├── routes/         # Express.js endpoint routing.
+├── services/       # Core business logic and intelligence engines.
+└── utils/          # Auxiliary utilities including NLP action extraction.
 ```
 
 ---
 
-## 🧠 Core Services (Deep Dive)
+## Core Intelligence Services
 
-### `UnitConverter` (Integer Precision Logic)
+### UnitConverter (Precision Engine)
 
-Prevents floating-point errors in grocery math.
+Mitigates floating-point inaccuracies through an integer-based scaling strategy.
 
-- **Normalizer**: Scales all inputs (kg, L, cups) to a base integer representation.
-- **Context Awareness**: Distinguishes between mass (g) and volume (ml) for ambiguous units like "oz".
+- **Normalization**: Scales all incoming measurements (mass, volume, count) to a base integer representation.
+- **Context Resolution**: Employs heuristic metadata analysis to distinguish between mass (grams) and volume (milliliters) for ambiguous units.
 
-### `LunchEngine` (Heuristic Rotation)
+### LunchEngine (Heuristic Rotation)
 
-Automates household meal planning using a weighted scoring model.
+Automates multi-user meal planning through a weighted scoring model.
 
-- **Fatigue Tracking**: Calculates a 7-day decay for recently consumed items.
-- **Acceptance Logic**: Combines user preference, stock availability, and fatigue points to suggest optimal rotations.
+- **Fatigue Tracking**: Implements a 7-day decay coefficient for recently consumed items.
+- **Optimization**: Balances user preference, inventory stock levels, and historical fatigue to generate daily recommendations.
 
-### `AIService` & `ActionExtractor`
+### AIService & ActionExtractor
 
-Heuristic engine for parsing conversational input.
+The heuristic interpretation layer for conversational input.
 
-- **Pattern Matching**: Multi-stage regex pipeline for extracting `consume`, `purchase`, and `meal` actions.
-- **Confidence Scoring**: Dynamic scoring based on unit presence, quantity precision, and string length.
-
----
-
-## 🛡️ Security & Middleware Pipeline
-
-Every request passes through an enforced security stack:
-
-1.  **Transport Security**: Managed TLS (Cloudflare/Render).
-2.  **Auth Middleware**: JWT verification (`bearer` token) with `process.env.JWT_SECRET` validation.
-3.  **Request Validation**: `express-validator` schemas sanitize and type-check all payloads before they hit the controller.
-4.  **Admin Guard**: Granular permission checks for destructive operations and system analytics.
+- **Pattern Matching**: A multi-stage regular expression pipeline for structured transaction extraction.
+- **Confidence Layer**: Dynamic scoring based on unit precision, quantity presence, and semantic density.
 
 ---
 
-## 📊 Database Topology
+## Security and Middleware Pipeline
 
-Built on **SQLite3** for high-speed local persistence and low-overhead cloud scaling.
+All incoming requests are processed through a strictly ordered middleware stack:
 
-- **Multi-Tenancy**: Data is partitioned via `HouseholdID`.
-- **Primary Relations**:
-  - `User` ⟷ `Household` (Many-to-Many join table)
-  - `Household` ⟷ `Items` / `StockEntries`
-  - `Items` ⟷ `PriceSnapshots` / `FatigueScores`
-
----
-
-## 🚀 DevOps & Deployment Specs
-
-### Production (Render.com)
-
-- **Deployment**: Docker-based web service.
-- **Build Step**: `npm install && npm run build`.
-- **Persistence**: Managed volume mount at `/data` for `database.sqlite`.
-
-### Manual Failover (Ubuntu VPS)
-
-- **Script**: `tools/deploy_vps.sh`.
-- **Mechanics**: Atomic tarball deployment excluding `.sqlite` and `.env` to prevent state collision.
-- **Proxy**: Nginx mapping internal port 3000 to public HTTPS ports.
+1. **Transport Security**: Managed TLS provided by the reverse proxy layer.
+2. **Auth Integration**: Mandatory JWT verification (`bearer` token) against `process.env.JWT_SECRET`.
+3. **Payload Validation**: Schema enforcement via `express-validator` prior to controller entry.
+4. **Access Control**: Granular `adminOnly` guards for system-level analytics and infrastructure management.
 
 ---
 
-_Built for accuracy. Deployed for reliability._
+## Database Topology
+
+Persistence is managed via SQLite3, optimized for high-speed local processing and minimal infrastructure overhead.
+
+- **Isolation**: Multi-tenancy is enforced at the database level via `HouseholdID` partitioning.
+- **Entity Relations**:
+  - User/Household: Many-to-Many association.
+  - Household/Stock: Primary inventory relation.
+  - Items/Prices: Historical pricing and forecasting snapshots.
+
+---
+
+## DevOps and Deployment
+
+### Cloud Native (Render.com)
+
+- **Engine**: Docker (Multi-stage build).
+- **Storage**: Persistent volume mounted at `/data` for `database.sqlite` integrity.
+
+### Infrastructure-as-Code (VPS)
+
+- **Provisioning**: Managed via `infra/provision_vps.sh` (Ubuntu 24.04).
+- **Sync**: Atomic code swaps via `tools/deploy_vps.sh`, excluding stateful artifacts (`.sqlite`, `.env`).
+
+---
+
+_Developed for precision. Scaled for reliability._

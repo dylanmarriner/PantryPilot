@@ -1,72 +1,72 @@
-# 📱 PantryPilot Mobile
+# PantryPilot Mobile
 
-A premium, high-performance Android client built with **React Native** and **Expo**. Optimized for high-speed logging in ambient kitchen environments.
+The primary client interface for the PantryPilot ecosystem, built with React Native and Expo. The application is optimized for low-latency inventory logging in ambient environment settings.
 
 ---
 
-## 💎 Design System & UI Tokens
+## Design System and Visual Tokens
 
-The UI implements a custom, high-contrast "Glassmorphism" system defined in `DesignSystem.js`.
+The user interface follows a high-contrast, OLED-efficient design system documented in `DesignSystem.js`.
 
 ### Color Palette
 
-- **Canvas**: `#050505` (Deep OLED Black)
-- **Glass**: `rgba(24, 24, 27, 0.4)` (Zinc-900 at 40% opacity)
-- **Interface**: `Cyan-500` (#22d3ee) & `Fuchsia-500` (#d946ef)
+- **Primary Canvas**: `#050505` (True Black)
+- **Glass Elements**: `rgba(24, 24, 27, 0.4)` (Zinc-900 at 40% opacity)
+- **Action Accents**: `Cyan-500` (#22d3ee) and `Fuchsia-500` (#d946ef)
 
-### Tokens
+### Visual Token Specs
 
-- **Backdrop Blur**: 12px Gaussian blur on all cards.
-- **Border Radius**: Geometric consistency (SM: 8, MD: 12, LG: 16).
-- **Typography**: Optimized for arm-length readability (Large headers, high contrast secondary text).
-
----
-
-## 🔄 State & Sync Architecture
-
-PantryPilot Mobile uses a **Local-First, Cloud-Synced** architecture to ensure 100% availability in kitchens with poor Wi-Fi.
-
-### `SyncQueue` Implementation
-
-- **Queue Storage**: Persistent `AsyncStorage` transaction log.
-- **Idempotency**: Every operation (Adjustment, Create, Delete) has a `clientId` to prevent duplicated updates on the server.
-- **Failure Recovery**: Auto-retry logic with exponential backoff for `FAILED` status operations.
-
-### Navigation Hierarchy
-
-- **Auth Stack**: Dedicated flow for Login/Session recovery.
-- **Main Tabs**:
-  - **Dashboard**: High-level inventory KPI cards.
-  - **Log Activity**: Core interaction point (Text/Voice/Mic).
-  - **Lunch Planner**: The heuristic rotation interface.
-  - **Settings**: Household and user configuration.
+- **Background Effects**: 12px Gaussian blur on all navigation and interaction cards.
+- **Geometry**: Consistent border radiuses (SM: 8px, MD: 12px, LG: 16px).
+- **Typography**: Optimized for long-distance legibility and high-speed glanceability.
 
 ---
 
-## 🛠️ Internal Workflow
+## State and Sync Architecture
 
-### Development
+PantryPilot Mobile implements a Local-First architecture to ensure availability in environments with intermittent network connectivity.
 
-1. **Dependencies**: `npm install`.
-2. **Server**: `npx expo start`.
-3. **Target**: Scan QR code via **Expo Go** (Android/iOS).
+### SyncQueue Specification
 
-### Production Build (EAS)
+- **Persistence**: Transactions are recorded in an `AsyncStorage`-backed log.
+- **Idempotency**: All operations (inventory adjustments, creation, deletion) utilize a `clientId` to prevent duplicate processing server-side.
+- **Fault Tolerance**: Automatic retry mechanism with exponential backoff for transactions marked as `FAILED`.
 
-Builds are orchestrated via **Expo Application Services (EAS)**.
+### Navigation Architecture
 
-- **Profile**: `production` (Configured in `eas.json`).
-- **Artifact**: Standard APK (`build.gradles` managed by Expo Prebuild).
-- **Environment**: Bundles the production API endpoint (`pantrypilot-api.onrender.com`).
-
----
-
-## 📜 Key Service Modules
-
-- **`api.js`**: Centralized Axios instance with interceptors for JWT injection and base-URL management.
-- **`DesignSystem.js`**: Atomic design tokens for cross-component consistency.
-- **`SyncQueue.js`**: The critical persistence layer for offline logging.
+- **Authentication Flow**: Managed state for session recovery and household onboarding.
+- **Core Interface**:
+  - Dashboard: Real-time inventory KPI visualization.
+  - Activity Logger: Primary interaction point for text and voice-to-text input.
+  - Rotation Planner: Interface for the heuristic lunch engine.
+  - System Configuration: Management of household and user metadata.
 
 ---
 
-_Designed for the cook. Optimized for the home._
+## Development and Build Workflow
+
+### Local Development
+
+1. **Initialize**: `npm install`.
+2. **Boot**: `npx expo start`.
+3. **Connect**: Utilize Expo Go for development cycle testing.
+
+### Production Environment (EAS)
+
+Builds are managed via Expo Application Services (EAS).
+
+- **Profile**: Production (Targeting APK/AAB).
+- **Prebuild**: Android/iOS native paths are managed via standard Expo prebuild handlers.
+- **Context**: Bundles the production API entry point (`pantrypilot-api.onrender.com`).
+
+---
+
+## Core Service Modules
+
+- **API Gateway**: Centralized Axios instance with interceptors for JWT injection and automated session management.
+- **DesignSystem**: Immutable UI tokens ensuring consistency across the application.
+- **SyncQueue**: The critical persistence manager for offline-ready grocery logging.
+
+---
+
+_Optimized for usability. Built for the home._
