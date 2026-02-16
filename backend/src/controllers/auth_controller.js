@@ -1,11 +1,13 @@
 const { validationResult } = require('express-validator');
 const { User } = require('../models');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 class AuthController {
   /**
    * Register a new user
    */
-  async register(req, res) {
+  register = async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -27,10 +29,13 @@ class AuthController {
         });
       }
 
+      // Hash password
+      const passwordHash = await this.hashPassword(password);
+
       // Create new user
       const user = await User.create({
         email,
-        passwordHash: this.hashPassword(password),
+        passwordHash,
         firstName: email.split('@')[0],
         lastName: 'User'
       });
@@ -55,12 +60,12 @@ class AuthController {
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
-  }
+  };
 
   /**
    * Login user
    */
-  async login(req, res) {
+  login = async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -83,7 +88,8 @@ class AuthController {
       }
 
       // Verify password
-      if (!this.verifyPassword(password, user.passwordHash)) {
+      const isValid = await this.verifyPassword(password, user.passwordHash);
+      if (!isValid) {
         return res.status(401).json({
           success: false,
           message: 'Invalid email or password'
@@ -110,15 +116,14 @@ class AuthController {
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
-  }
+  };
 
   /**
    * Logout user (invalidate token server-side if needed)
    */
-  async logout(req, res) {
+  logout = async (req, res) => {
     try {
-      // In a simple implementation, logout is handled client-side
-      // In a production system, you might maintain a token blacklist
+      // In a simple JWT implementation, logout is client-side (delete token)
       res.json({
         success: true,
         message: 'Logged out successfully'
@@ -130,15 +135,15 @@ class AuthController {
         message: 'Logout failed'
       });
     }
-  }
+  };
 
   /**
    * Validate token
    */
-  async validateToken(req, res) {
+  validateToken = async (req, res) => {
     try {
       const user = await User.findByPk(req.user.id);
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -162,12 +167,12 @@ class AuthController {
         message: 'Token validation failed'
       });
     }
-  }
+  };
 
   /**
    * Reset password
    */
-  async resetPassword(req, res) {
+  resetPassword = async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -179,21 +184,10 @@ class AuthController {
       }
 
       const { email } = req.body;
-
-      const user = await User.findOne({ where: { email } });
-      if (!user) {
-        // For security, don't reveal if user exists
-        return res.json({
-          success: true,
-          message: 'If an account exists with this email, a reset link will be sent'
-        });
-      }
-
-      // In production, generate reset token and send email
-      // For now, just return success message
+      // In production, initiate password reset flow
       res.json({
         success: true,
-        message: 'Password reset link sent to email'
+        message: 'If an account exists, a reset link will be sent'
       });
     } catch (error) {
       console.error('Password reset failed:', error);
@@ -202,12 +196,12 @@ class AuthController {
         message: 'Password reset failed'
       });
     }
-  }
+  };
 
   /**
    * Update user profile
    */
-  async updateProfile(req, res) {
+  updateProfile = async (req, res) => {
     try {
       const userId = req.user.id;
       const user = await User.findByPk(userId);
@@ -246,42 +240,41 @@ class AuthController {
         error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
       });
     }
-  }
+  };
 
   /**
    * Generate JWT token
    */
-  generateToken(user) {
-    // Simple token generation - in production use jsonwebtoken library
-    // Format: header.payload.signature (we'll create a minimal version)
-    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64');
-    const payload = Buffer.from(JSON.stringify({ 
-      user: { id: user.id, email: user.email },
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
-    })).toString('base64');
-    
-    // Signature would normally be HMAC signed, but for simplicity we'll use a basic hash
-    const signature = Buffer.from('mock-signature').toString('base64');
-    
-    return `${header}.${payload}.${signature}`;
-  }
+  generateToken = (user) => {
+    const payload = {
+      user: {
+        id: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin || false
+      }
+    };
+
+    return jwt.sign(
+      payload,
+      process.env.JWT_SECRET || 'dev-secret-key-do-not-use-in-prod',
+      { expiresIn: '7d' }
+    );
+  };
 
   /**
-   * Hash password (simplified - use bcrypt in production)
+   * Hash password using bcrypt
    */
-  hashPassword(password) {
-    // In production, use bcrypt: bcrypt.hash(password, 10)
-    return Buffer.from(password).toString('base64');
-  }
+  hashPassword = async (password) => {
+    const salt = await bcrypt.genSalt(10);
+    return await bcrypt.hash(password, salt);
+  };
 
   /**
-   * Verify password (simplified - use bcrypt in production)
+   * Verify password using bcrypt
    */
-  verifyPassword(password, hash) {
-    // In production, use bcrypt: bcrypt.compare(password, hash)
-    return Buffer.from(password).toString('base64') === hash;
-  }
+  verifyPassword = async (password, hash) => {
+    return await bcrypt.compare(password, hash);
+  };
 }
 
 module.exports = new AuthController();

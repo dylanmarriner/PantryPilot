@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,36 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
-  Alert
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+  Platform,
+  Alert,
+} from "react-native";
+import {
+  BarChart3,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Tag,
+  ChevronLeft,
+  Download,
+  Grid,
+  Activity,
+} from "lucide-react-native";
+import { Theme } from "../styles/DesignSystem";
+import { useApi } from "../services/api";
+import GlassCard from "../components/GlassCard";
+import AuroraBackground from "../components/AuroraBackground";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const AnalyticsScreen = ({ navigation, route }) => {
-  const { household, user } = route.params;
+  // Safe navigation fallback for testing
+  const household = route.params?.household || {};
+
   const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedPeriod, setSelectedPeriod] = useState("30d");
+  const [activeTab, setActiveTab] = useState("overview");
+  const api = useApi();
 
   useEffect(() => {
     loadAnalyticsData();
@@ -27,510 +45,341 @@ const AnalyticsScreen = ({ navigation, route }) => {
   const loadAnalyticsData = async () => {
     try {
       setLoading(true);
-      const endDate = new Date();
-      const startDate = new Date();
-
-      switch (selectedPeriod) {
-        case '7d':
-          startDate.setDate(startDate.getDate() - 7);
-          break;
-        case '30d':
-          startDate.setDate(startDate.getDate() - 30);
-          break;
-        case '90d':
-          startDate.setDate(startDate.getDate() - 90);
-          break;
-        default:
-          startDate.setDate(startDate.getDate() - 30);
-      }
-
-      const response = await fetch(
-        `/api/households/${household.id}/analytics?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      const data = await api.get(
+        `/households/${household.id}/analytics?period=${selectedPeriod}`,
       );
-      const data = await response.json();
       setAnalyticsData(data);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load analytics data');
+      console.error("Analytics load error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const exportReport = async (format = 'json') => {
-    try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-
-      const response = await fetch(
-        `/api/households/${household.id}/export?format=${format}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
-      );
-
-      if (response.ok) {
-        Alert.alert('Success', `Report exported as ${format.toUpperCase()}`);
-      } else {
-        Alert.alert('Error', 'Failed to export report');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to export report');
-    }
-  };
-
   const renderOverviewTab = () => {
     if (!analyticsData) return null;
-
     const { usageStats, costSavings } = analyticsData;
 
     return (
       <View style={styles.tabContent}>
-        {/* Key Metrics */}
         <View style={styles.metricsGrid}>
-          <View style={styles.metricCard}>
-            <Ionicons name="bar-chart-outline" size={24} color="#007AFF" />
+          <GlassCard style={styles.metricCard}>
+            <BarChart3 size={20} color={Theme.colors.primary} />
             <Text style={styles.metricValue}>{usageStats.totalEvents}</Text>
-            <Text style={styles.metricLabel}>Total Activities</Text>
-          </View>
+            <Text style={styles.metricLabel}>TOTAL ACTIVITIES</Text>
+          </GlassCard>
 
-          <View style={styles.metricCard}>
-            <Ionicons name="cash-outline" size={24} color="#34C759" />
-            <Text style={styles.metricValue}>${(costSavings.totalSavings / 100).toFixed(2)}</Text>
-            <Text style={styles.metricLabel}>Total Savings</Text>
-          </View>
+          <GlassCard style={styles.metricCard}>
+            <DollarSign size={20} color={Theme.colors.success} />
+            <Text style={styles.metricValue}>
+              ${(costSavings.totalSavings / 100).toFixed(2)}
+            </Text>
+            <Text style={styles.metricLabel}>TOTAL SAVINGS</Text>
+          </GlassCard>
 
-          <View style={styles.metricCard}>
-            <Ionicons name="people-outline" size={24} color="#FF9500" />
-            <Text style={styles.metricValue}>{Object.keys(usageStats.userActivity).length}</Text>
-            <Text style={styles.metricLabel}>Active Users</Text>
-          </View>
+          <GlassCard style={styles.metricCard}>
+            <Users size={20} color={Theme.colors.secondary} />
+            <Text style={styles.metricValue}>
+              {Object.keys(usageStats.userActivity).length}
+            </Text>
+            <Text style={styles.metricLabel}>ACTIVE NODES</Text>
+          </GlassCard>
 
-          <View style={styles.metricCard}>
-            <Ionicons name="pricetag-outline" size={24} color="#FF3B30" />
+          <GlassCard style={styles.metricCard}>
+            <Tag size={20} color={Theme.colors.warning} />
             <Text style={styles.metricValue}>{costSavings.itemsAnalyzed}</Text>
-            <Text style={styles.metricLabel}>Items Tracked</Text>
-          </View>
+            <Text style={styles.metricLabel}>ASSETS TRACKED</Text>
+          </GlassCard>
         </View>
 
-        {/* Top Savings Items */}
-        {costSavings.topSavingsItems.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Top Savings Items</Text>
-            {costSavings.topSavingsItems.slice(0, 5).map((item, index) => (
-              <View key={index} style={styles.savingsItem}>
-                <View style={styles.savingsInfo}>
-                  <Text style={styles.savingsItemName}>{item.itemName}</Text>
-                  <Text style={styles.savingsPercentage}>{item.percentageChange}%</Text>
-                </View>
-                <Text style={styles.savingsAmount}>
-                  ${(item.savings / 100).toFixed(2)}
+        <GlassCard style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>EFFICIENCY LEADERS</Text>
+          {costSavings.topSavingsItems.map((item, index) => (
+            <View key={index} style={styles.listRow}>
+              <View style={styles.rowInfo}>
+                <Text style={styles.itemName}>
+                  {item.itemName.toUpperCase()}
+                </Text>
+                <Text style={styles.itemMeta}>
+                  {item.percentageChange}% VARIANCE
                 </Text>
               </View>
-            ))}
-          </View>
-        )}
-
-        {/* Activity Breakdown */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activity Breakdown</Text>
-          {Object.entries(usageStats.eventTypes).map(([eventType, count]) => (
-            <View key={eventType} style={styles.activityItem}>
-              <Text style={styles.activityType}>{eventType.replace('_', ' ')}</Text>
-              <Text style={styles.activityCount}>{count}</Text>
+              <Text style={styles.itemValue}>
+                +${(item.savings / 100).toFixed(2)}
+              </Text>
             </View>
           ))}
-        </View>
+        </GlassCard>
       </View>
     );
   };
 
   const renderSavingsTab = () => {
     if (!analyticsData) return null;
-
     const { costSavings } = analyticsData;
 
     return (
       <View style={styles.tabContent}>
-        <View style={styles.savingsHeader}>
-          <Text style={styles.savingsTotal}>
+        <GlassCard style={styles.savingsHero}>
+          <Text style={styles.heroValue}>
             ${(costSavings.totalSavings / 100).toFixed(2)}
           </Text>
-          <Text style={styles.savingsLabel}>Total Savings</Text>
-        </View>
+          <Text style={styles.heroLabel}>TOTAL VAULT OPTIMIZATION</Text>
+        </GlassCard>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Category Breakdown</Text>
-          {Object.entries(costSavings.categoryBreakdown).map(([category, savings]) => (
-            <View key={category} style={styles.categoryItem}>
-              <Text style={styles.categoryName}>{category}</Text>
-              <Text style={styles.categorySavings}>
-                ${(savings / 100).toFixed(2)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>All Savings Items</Text>
-          {costSavings.topSavingsItems.map((item, index) => (
-            <View key={index} style={styles.savingsItem}>
-              <View style={styles.savingsInfo}>
-                <Text style={styles.savingsItemName}>{item.itemName}</Text>
-                <Text style={styles.savingsPercentage}>{item.percentageChange}%</Text>
+        <GlassCard style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>CATEGORY BREAKDOWN</Text>
+          {Object.entries(costSavings.categoryBreakdown).map(
+            ([category, savings]) => (
+              <View key={category} style={styles.listRow}>
+                <Text style={styles.itemName}>{category.toUpperCase()}</Text>
+                <Text style={styles.itemValue}>
+                  ${(savings / 100).toFixed(2)}
+                </Text>
               </View>
-              <Text style={styles.savingsAmount}>
-                ${(item.savings / 100).toFixed(2)}
-              </Text>
-            </View>
-          ))}
-        </View>
+            ),
+          )}
+        </GlassCard>
       </View>
     );
   };
-
-  const renderActivityTab = () => {
-    if (!analyticsData) return null;
-
-    const { usageStats } = analyticsData;
-
-    return (
-      <View style={styles.tabContent}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Event Types</Text>
-          {Object.entries(usageStats.eventTypes).map(([eventType, count]) => (
-            <View key={eventType} style={styles.activityItem}>
-              <Text style={styles.activityType}>{eventType.replace('_', ' ')}</Text>
-              <Text style={styles.activityCount}>{count}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>User Activity</Text>
-          {Object.entries(usageStats.userActivity).map(([userId, count]) => (
-            <View key={userId} style={styles.activityItem}>
-              <Text style={styles.activityType}>User {userId.slice(-8)}</Text>
-              <Text style={styles.activityCount}>{count}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Daily Activity</Text>
-          {Object.entries(usageStats.dailyActivity)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .slice(0, 30)
-            .map(([date, count]) => (
-              <View key={date} style={styles.activityItem}>
-                <Text style={styles.activityType}>{date}</Text>
-                <Text style={styles.activityCount}>{count}</Text>
-              </View>
-            ))}
-        </View>
-      </View>
-    );
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading analytics...</Text>
-      </View>
-    );
-  }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Analytics</Text>
-        <TouchableOpacity onPress={() => exportReport()}>
-          <Ionicons name="download-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Period Selector */}
-      <View style={styles.periodSelector}>
-        {['7d', '30d', '90d'].map((period) => (
+    <AuroraBackground>
+      <View style={styles.container}>
+        <View style={styles.header}>
           <TouchableOpacity
-            key={period}
-            style={[
-              styles.periodButton,
-              selectedPeriod === period && styles.periodButtonActive
-            ]}
-            onPress={() => setSelectedPeriod(period)}
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
           >
-            <Text
-              style={[
-                styles.periodButtonText,
-                selectedPeriod === period && styles.periodButtonTextActive
-              ]}
-            >
-              {period === '7d' ? '7 Days' : period === '30d' ? '30 Days' : '90 Days'}
-            </Text>
+            <ChevronLeft size={24} color={Theme.colors.text.primary} />
           </TouchableOpacity>
-        ))}
-      </View>
+          <Text style={styles.title}>ANALYTICS ENGINE</Text>
+          <TouchableOpacity style={styles.backBtn}>
+            <Download size={20} color={Theme.colors.text.primary} />
+          </TouchableOpacity>
+        </View>
 
-      {/* Tab Selector */}
-      <View style={styles.tabSelector}>
-        {[
-          { key: 'overview', label: 'Overview', icon: 'grid-outline' },
-          { key: 'savings', label: 'Savings', icon: 'cash-outline' },
-          { key: 'activity', label: 'Activity', icon: 'bar-chart-outline' }
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[
-              styles.tabButton,
-              activeTab === tab.key && styles.tabButtonActive
-            ]}
-            onPress={() => setActiveTab(tab.key)}
+        <View style={styles.periodSelector}>
+          {["7D", "30D", "90D"].map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[
+                styles.periodBtn,
+                selectedPeriod.toUpperCase() === p && styles.periodBtnActive,
+              ]}
+              onPress={() => setSelectedPeriod(p.toLowerCase())}
+            >
+              <Text
+                style={[
+                  styles.periodBtnText,
+                  selectedPeriod.toUpperCase() === p &&
+                    styles.periodBtnTextActive,
+                ]}
+              >
+                {p}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.tabs}>
+          {[
+            { key: "overview", label: "OVERVIEW", icon: Grid },
+            { key: "savings", label: "SAVINGS", icon: DollarSign },
+            { key: "activity", label: "ACTIVITY", icon: Activity },
+          ].map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[
+                styles.tabBtn,
+                activeTab === tab.key && styles.tabBtnActive,
+              ]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <tab.icon
+                size={16}
+                color={
+                  activeTab === tab.key
+                    ? Theme.colors.primary
+                    : Theme.colors.text.dimmed
+                }
+              />
+              <Text
+                style={[
+                  styles.tabBtnText,
+                  activeTab === tab.key && styles.tabBtnTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {loading ? (
+          <View style={styles.center}>
+            <ActivityIndicator color={Theme.colors.primary} />
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons
-              name={tab.icon}
-              size={20}
-              color={activeTab === tab.key ? '#007AFF' : '#8E8E93'}
-            />
-            <Text
-              style={[
-                styles.tabButtonText,
-                activeTab === tab.key && styles.tabButtonTextActive
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+            {activeTab === "overview" && renderOverviewTab()}
+            {activeTab === "savings" && renderSavingsTab()}
+            <View style={{ height: 100 }} />
+          </ScrollView>
+        )}
       </View>
-
-      <ScrollView style={styles.content}>
-        {activeTab === 'overview' && renderOverviewTab()}
-        {activeTab === 'savings' && renderSavingsTab()}
-        {activeTab === 'activity' && renderActivityTab()}
-      </ScrollView>
-    </View>
+    </AuroraBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#8E8E93',
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
+  backBtn: { p: 8 },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000000',
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 4,
   },
   periodSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 20,
   },
-  periodButton: {
+  periodBtn: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  periodButtonActive: {
-    backgroundColor: '#007AFF',
+  periodBtnActive: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
   },
-  periodButtonText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#8E8E93',
+  periodBtnText: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  periodButtonTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+  periodBtnTextActive: { color: "#000" },
+  tabs: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 10,
   },
-  tabSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  tabButton: {
+  tabBtn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
     paddingVertical: 12,
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor: "transparent",
   },
-  tabButtonActive: {
-    borderBottomColor: '#007AFF',
+  tabBtnActive: { borderBottomColor: Theme.colors.primary },
+  tabBtnText: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  tabButtonText: {
-    marginLeft: 4,
-    fontSize: 14,
-    color: '#8E8E93',
-  },
-  tabButtonTextActive: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-  },
-  tabContent: {
-    padding: 16,
-  },
+  tabBtnTextActive: { color: Theme.colors.primary },
+  content: { flex: 1 },
+  tabContent: { padding: 20, gap: 20 },
   metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
   },
   metricCard: {
-    width: (width - 48) / 2,
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    width: (width - 40 - 12) / 2,
+    padding: 20,
+    alignItems: "center",
+    gap: 8,
   },
   metricValue: {
+    color: "#FFF",
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginVertical: 8,
+    fontWeight: "900",
   },
   metricLabel: {
+    color: Theme.colors.text.dimmed,
     fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
+  sectionCard: { padding: 20, gap: 16 },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 16,
+    color: Theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
   },
-  savingsHeader: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  savingsTotal: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#34C759',
-  },
-  savingsLabel: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  savingsItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+  listRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: "rgba(255,255,255,0.05)",
+    paddingBottom: 12,
   },
-  savingsInfo: {
-    flex: 1,
+  rowInfo: { gap: 4 },
+  itemName: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
-  savingsItemName: {
-    fontSize: 16,
-    color: '#000000',
-    marginBottom: 2,
+  itemMeta: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 12,
+    fontWeight: "600",
   },
-  savingsPercentage: {
+  itemValue: {
+    color: Theme.colors.success,
     fontSize: 14,
-    color: '#34C759',
+    fontWeight: "900",
   },
-  savingsAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
+  savingsHero: {
+    padding: 30,
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(34, 211, 238, 0.05)",
   },
-  categoryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+  heroValue: {
+    color: Theme.colors.success,
+    fontSize: 40,
+    fontWeight: "900",
   },
-  categoryName: {
-    fontSize: 16,
-    color: '#000000',
+  heroLabel: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
   },
-  categorySavings: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#34C759',
-  },
-  activityItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  activityType: {
-    fontSize: 16,
-    color: '#000000',
+  center: {
     flex: 1,
-  },
-  activityCount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

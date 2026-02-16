@@ -1,9 +1,9 @@
 <!--
-ATLAS-GATE_PLAN_HASH: c6d5fd58cec3a5b58201d6ced2b241ec876810ebe6358777e6c377db0aee233f
+ATLAS-GATE_PLAN_HASH: PENDING_HASH
 ATLAS-GATE_PLAN_SIGNATURE: PENDING_SIGNATURE
-COSIGN_SIGNATURE: MEUCICikzWRyc7p2tSTnSuC5QesXoat58wqGkyG7q9N0xsvfAiEAvv4+ygiFhPWSiDqefF+lgepzs1mGc1sd955MGTnmyhw=
+COSIGN_SIGNATURE: PENDING_SIGNATURE
 ROLE: ANTIGRAVITY
-STATUS: APPROVED
+STATUS: DRAFT
 -->
 
 # Plan Metadata
@@ -11,7 +11,7 @@ STATUS: APPROVED
 Plan ID: PLAN_PANTRYPILOT_PHASE_9_V1
 Phase ID: PHASE_9
 Roadmap reference: docs/roadmap.md (PHASE 9 — Product-Ready Expansion)
-Scope summary: Implementation of multi-household support, role-based permissions, subscription schemas, feature flags, usage analytics, cost savings dashboard, and export reports.
+Scope summary: Implementation of multi-household support, role-based permissions, subscription schemas, feature flags, usage analytics, cost savings dashboard, export reports, and a platform-level Admin UI.
 Explicit dependencies on PHASE_0–PHASE_8:
 - PLAN_PANTRYPILOT_PHASE_0_V1 (Infrastructure)
 - PLAN_PANTRYPILOT_PHASE_1_V1 (Inventory Engine)
@@ -40,17 +40,23 @@ Files to CREATE:
 - [NEW] backend/src/models/usage_analytics.js
 - [NEW] backend/src/services/analytics_service.js
 - [NEW] backend/src/services/export_service.js
+- [NEW] backend/src/services/admin_service.js
+- [NEW] backend/src/routes/admin_routes.js
 - [NEW] mobile/src/screens/HouseholdManagerScreen.js
 - [NEW] mobile/src/screens/AnalyticsScreen.js
+- [NEW] mobile/src/screens/AdminDashboardScreen.js
+- [NEW] mobile/src/screens/FeatureFlagManagerScreen.js
 - [NEW] backend/tests/auth.test.js
 - [NEW] backend/tests/permissions.test.js
 - [NEW] backend/tests/analytics.test.js
+- [NEW] backend/tests/admin.test.js
 
 Files to MODIFY:
 - [MODIFY] backend/src/models/household.js
 - [MODIFY] backend/src/models/index.js
 - [MODIFY] mobile/src/screens/AuthScreen.js
 - [MODIFY] mobile/src/navigation/AppNavigator.js
+- [MODIFY] backend/src/app.js
 
 Explicit DELETE policy:
 - MUST NOT perform DELETE operations on existing legacy files in backend/, mobile/, or workers/.
@@ -80,9 +86,9 @@ Allowed operations: CREATE, MODIFY
 Forbidden operations: DELETE
 Required intent artifacts: User, Role, and UserHousehold models; Analytics and Export services; Household management and Analytics mobile screens.
 Verification commands: npm --prefix backend run lint && npm --prefix backend test tests/auth.test.js && npm --prefix backend test tests/permissions.test.js && npm --prefix backend test tests/analytics.test.js
-Expected outcomes: Functional RBAC, multi-household associations, SaaS-ready schema, usage analytics, and reporting.
+Expected outcomes: Functional RBAC, multi-household associations, SaaS-ready schema, usage analytics, global platform administration interface (Admin UI), and reporting.
 Failure stop conditions: Linting failure, test failure, path allowlist violation, or violation of inventory invariants.
-Concrete deliverables: Multi-household junction schema, role-based access control (RBAC), subscription-ready metadata, feature flags, usage tracking, cost analytics dashboard, and export utilities.
+Concrete deliverables: Multi-household junction schema, role-based access control (RBAC), subscription-ready metadata, feature flags (global and local), usage tracking, cost analytics dashboard, export utilities, and a tabbed Admin UI for owners (Global Stats, System Health, and Financials).
 Behavioral guarantees:
 - Users MUST be able to belong to multiple households.
 - Access to household data MUST be restricted by Role assignments.
@@ -110,15 +116,21 @@ Runtime invariants:
 - backend/src/models/usage_analytics.js
 - backend/src/services/analytics_service.js
 - backend/src/services/export_service.js
+- backend/src/services/admin_service.js
+- backend/src/routes/admin_routes.js
 - backend/src/models/household.js
 - backend/src/models/index.js
 - mobile/src/screens/HouseholdManagerScreen.js
 - mobile/src/screens/AnalyticsScreen.js
+- mobile/src/screens/AdminDashboardScreen.js
+- mobile/src/screens/FeatureFlagManagerScreen.js
 - mobile/src/screens/AuthScreen.js
 - mobile/src/navigation/AppNavigator.js
+- backend/src/app.js
 - backend/tests/auth.test.js
 - backend/tests/permissions.test.js
 - backend/tests/analytics.test.js
+- backend/tests/admin.test.js
 - docs/plans/PLAN_PANTRYPILOT_PHASE_9_V1.md
 
 # Verification Gates

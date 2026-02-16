@@ -12,8 +12,7 @@ class InventoryController {
    */
   async getInventory(req, res) {
     try {
-      const userId = req.user.id;
-      
+
       const items = await Item.findAll({
         attributes: ['id', 'name', 'category', 'preferred_unit', 'minimum_quantity']
       });
@@ -21,7 +20,7 @@ class InventoryController {
       // Get current stock for each item
       const inventory = await Promise.all(items.map(async (item) => {
         const currentStock = await this.inventoryService.getCurrentStock(item.id);
-        
+
         return {
           id: item.id,
           name: item.name,
@@ -99,7 +98,13 @@ class InventoryController {
         });
       }
 
-      const userId = req.user.id;
+      const userId = req.user ? req.user.id : null;
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
       const { name, quantity = 0, unit = 'unit', price = 0, category = 'Other' } = req.body;
 
       // Create item
@@ -158,6 +163,14 @@ class InventoryController {
       }
 
       const { itemId } = req.params;
+      const userId = req.user ? req.user.id : null;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'User authentication required'
+        });
+      }
       const { quantity, name, unit, price } = req.body;
 
       const item = await Item.findByPk(itemId);

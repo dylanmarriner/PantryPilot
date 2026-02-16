@@ -1,14 +1,26 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
   RefreshControl,
-  Alert 
-} from 'react-native';
-import { useApi } from '../services/api';
+  Alert,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import {
+  ShoppingCart,
+  CheckCircle,
+  Package,
+  RefreshCw,
+  Plus,
+} from "lucide-react-native";
+import { useApi } from "../services/api";
+import { Theme } from "../styles/DesignSystem";
+import GlassCard from "../components/GlassCard";
+import AuroraBackground from "../components/AuroraBackground";
 
 export default function GroceryListScreen() {
   const [groceryList, setGroceryList] = useState([]);
@@ -18,11 +30,10 @@ export default function GroceryListScreen() {
 
   const loadGroceryList = async () => {
     try {
-      const data = await api.get('/grocery-list');
+      const data = await api.get("/grocery-list");
       setGroceryList(data);
     } catch (error) {
-      console.error('Failed to load grocery list:', error);
-      Alert.alert('Error', 'Failed to load grocery list');
+      console.error("Failed to load grocery list:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -31,12 +42,17 @@ export default function GroceryListScreen() {
 
   const generateGroceryList = async () => {
     try {
-      const data = await api.post('/grocery-list/generate');
+      setLoading(true);
+      const data = await api.post("/grocery-list/generate");
       setGroceryList(data);
-      Alert.alert('Success', 'Grocery list generated based on your needs');
     } catch (error) {
-      console.error('Failed to generate grocery list:', error);
-      Alert.alert('Error', 'Failed to generate grocery list');
+      console.error("Failed to generate grocery list:", error);
+      Alert.alert(
+        "SYNC ERROR",
+        "REMOTE CORE FAILED TO GENERATE LOGISTICS LIST",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -45,8 +61,8 @@ export default function GroceryListScreen() {
       await api.put(`/grocery-list/${itemId}`, { purchased: true });
       loadGroceryList();
     } catch (error) {
-      console.error('Failed to mark item as purchased:', error);
-      Alert.alert('Error', 'Failed to update item');
+      console.error("Failed to mark item as purchased:", error);
+      Alert.alert("SYSTEM ERROR", "FAILED TO COMMUTE PURCHASE TO VAULT");
     }
   };
 
@@ -56,255 +72,259 @@ export default function GroceryListScreen() {
 
   const groupItemsByCategory = (items) => {
     const grouped = {};
-    items.forEach(item => {
-      const category = item.category || 'Other';
-      if (!grouped[category]) {
-        grouped[category] = [];
-      }
+    items.forEach((item) => {
+      const category = item.category?.toUpperCase() || "GENERAL";
+      if (!grouped[category]) grouped[category] = [];
       grouped[category].push(item);
     });
     return grouped;
   };
 
   const renderGroceryItem = ({ item }) => (
-    <View style={styles.itemContainer}>
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName}>{item.name}</Text>
-        <Text style={styles.itemDetails}>
-          {item.quantity} {item.unit} · ${((item.estimatedPrice || 0) / 100).toFixed(2)}
-        </Text>
-        {item.priority === 'high' && (
-          <Text style={styles.priorityText}>High Priority</Text>
-        )}
-        {item.reason && (
-          <Text style={styles.reasonText}>Reason: {item.reason}</Text>
-        )}
-      </View>
-      <TouchableOpacity 
-        style={[styles.purchaseButton, item.purchased && styles.purchasedButton]}
-        onPress={() => markItemPurchased(item.id)}
-        disabled={item.purchased}
-      >
-        <Text style={[styles.purchaseButtonText, item.purchased && styles.purchasedButtonText]}>
-          {item.purchased ? 'Purchased' : 'Mark Purchased'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderCategory = ({ category, items }) => (
-    <View key={category} style={styles.categoryContainer}>
-      <Text style={styles.categoryTitle}>{category}</Text>
-      {items.map(item => (
-        <View key={item.id}>
-          {renderGroceryItem({ item })}
+    <GlassCard
+      style={[styles.itemCard, item.purchased && styles.itemPurchased]}
+    >
+      <View style={styles.itemMain}>
+        <View style={styles.itemHeader}>
+          <Text
+            style={[styles.itemName, item.purchased && styles.strikethrough]}
+          >
+            {item.name.toUpperCase()}
+          </Text>
+          {item.priority === "high" && !item.purchased && (
+            <View style={styles.priorityBadge}>
+              <Text style={styles.priorityText}>CORE</Text>
+            </View>
+          )}
         </View>
-      ))}
-    </View>
+        <Text style={styles.itemMeta}>
+          {item.quantity} {item.unit} ·{" "}
+          {item.category?.toUpperCase() || "ASSET"}
+        </Text>
+      </View>
+
+      {!item.purchased ? (
+        <TouchableOpacity
+          style={styles.checkBtn}
+          onPress={() => markItemPurchased(item.id)}
+        >
+          <Plus size={20} color={Theme.colors.primary} />
+        </TouchableOpacity>
+      ) : (
+        <CheckCircle size={20} color={Theme.colors.success} />
+      )}
+    </GlassCard>
   );
 
-  if (loading) {
+  const renderCategory = ({ item }) => {
+    const [category, items] = item;
     return (
-      <View style={styles.container}>
-        <Text>Loading grocery list...</Text>
+      <View style={styles.categoryWrap}>
+        <Text style={styles.categoryTitle}>{category}</Text>
+        {items.map((it) => (
+          <View key={it.id}>{renderGroceryItem({ item: it })}</View>
+        ))}
       </View>
+    );
+  };
+
+  if (loading && !refreshing) {
+    return (
+      <AuroraBackground>
+        <View style={styles.center}>
+          <ActivityIndicator color={Theme.colors.primary} />
+        </View>
+      </AuroraBackground>
     );
   }
 
-  const groupedItems = groupItemsByCategory(groceryList.filter(item => !item.purchased));
-  const purchasedItems = groceryList.filter(item => item.purchased);
+  const groupedActive = groupItemsByCategory(
+    groceryList.filter((i) => !i.purchased),
+  );
+  const purchasedItems = groceryList.filter((i) => i.purchased);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Grocery List</Text>
-        <TouchableOpacity 
-          style={styles.generateButton}
-          onPress={generateGroceryList}
-        >
-          <Text style={styles.generateButtonText}>Generate List</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={Object.entries(groupedItems)}
-        renderItem={({ item: [category, items] }) => renderCategory({ category, items })}
-        keyExtractor={(item) => item[0]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => {
-            setRefreshing(true);
-            loadGroceryList();
-          }} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No items on your grocery list</Text>
-            <TouchableOpacity 
-              style={styles.generateButton}
-              onPress={generateGroceryList}
-            >
-              <Text style={styles.generateButtonText}>Generate Grocery List</Text>
-            </TouchableOpacity>
+    <AuroraBackground>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>LOGISTICS LIST</Text>
+            <Text style={styles.subtitle}>ACQUISITION PROTOCOL ACTIVE</Text>
           </View>
-        }
-        ListFooterComponent={
-          purchasedItems.length > 0 ? (
-            <View style={styles.purchasedSection}>
-              <Text style={styles.purchasedTitle}>Purchased Items</Text>
-              {purchasedItems.map(item => (
-                <View key={item.id} style={styles.purchasedItem}>
-                  <Text style={styles.purchasedItemName}>{item.name}</Text>
-                  <Text style={styles.purchasedItemDetails}>
-                    {item.quantity} {item.unit}
-                  </Text>
-                </View>
-              ))}
+          <TouchableOpacity style={styles.genBtn} onPress={generateGroceryList}>
+            <RefreshCw size={16} color="#000" />
+            <Text style={styles.genBtnText}>SYNC</Text>
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={Object.entries(groupedActive)}
+          renderItem={renderCategory}
+          keyExtractor={(item) => item[0]}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefres={loadGroceryList}
+              tintColor={Theme.colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <ShoppingCart
+                size={48}
+                color={Theme.colors.text.dimmed}
+                strokeWidth={1}
+              />
+              <Text style={styles.emptyText}>NO PENDING ACQUISITIONS</Text>
+              <TouchableOpacity
+                style={styles.emptyBtn}
+                onPress={generateGroceryList}
+              >
+                <Text style={styles.emptyBtnText}>INITIATE SCAN</Text>
+              </TouchableOpacity>
             </View>
-          ) : null
-        }
-      />
-    </View>
+          }
+          ListFooterComponent={
+            purchasedItems.length > 0 ? (
+              <View style={styles.purchasedSection}>
+                <View style={[styles.categoryWrap, { opacity: 0.6 }]}>
+                  <Text style={styles.categoryTitle}>ACQUIRED ASSETS</Text>
+                  {purchasedItems.map((it) => (
+                    <View key={it.id}>{renderGroceryItem({ item: it })}</View>
+                  ))}
+                </View>
+              </View>
+            ) : null
+          }
+        />
+        <View style={{ height: 80 }} />
+      </View>
+    </AuroraBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 4,
   },
-  generateButton: {
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 15,
+  subtitle: {
+    color: Theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginTop: 4,
+  },
+  genBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: Theme.colors.primary,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  generateButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  genBtnText: {
+    color: "#000",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  categoryContainer: {
-    marginBottom: 20,
-  },
+  listContent: { padding: 20 },
+  categoryWrap: { marginBottom: 28, gap: 12 },
   categoryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 15,
-    marginBottom: 10,
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    marginLeft: 4,
+    marginBottom: 6,
   },
-  itemContainer: {
-    backgroundColor: 'white',
-    marginHorizontal: 15,
-    marginVertical: 3,
-    padding: 15,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  itemCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    gap: 16,
   },
-  itemInfo: {
-    flex: 1,
-  },
+  itemPurchased: { opacity: 0.6 },
+  itemMain: { flex: 1, gap: 4 },
+  itemHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   itemName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  itemDetails: {
+    color: "#FFF",
     fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  strikethrough: {
+    textDecorationLine: "line-through",
+    color: Theme.colors.text.dimmed,
+  },
+  itemMeta: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  priorityBadge: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.2)",
   },
   priorityText: {
-    fontSize: 12,
-    color: '#f44336',
-    fontWeight: 'bold',
-    marginBottom: 3,
+    color: "#EF4444",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  reasonText: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
+  checkBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(34, 211, 238, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  purchaseButton: {
-    backgroundColor: '#4caf50',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginLeft: 10,
-  },
-  purchasedButton: {
-    backgroundColor: '#e0e0e0',
-  },
-  purchaseButtonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  purchasedButtonText: {
-    color: '#999',
-  },
-  emptyContainer: {
+  empty: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 100,
+    gap: 20,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
+    color: Theme.colors.text.dimmed,
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
-  purchasedSection: {
-    marginTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    paddingTop: 20,
+  emptyBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Theme.colors.primary,
+    backgroundColor: "rgba(34, 211, 238, 0.05)",
   },
-  purchasedTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#666',
-    marginLeft: 15,
-    marginBottom: 10,
+  emptyBtnText: {
+    color: Theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
-  purchasedItem: {
-    backgroundColor: '#f9f9f9',
-    marginHorizontal: 15,
-    marginVertical: 2,
-    padding: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  purchasedItemName: {
-    fontSize: 14,
-    color: '#666',
-    textDecorationLine: 'line-through',
-  },
-  purchasedItemDetails: {
-    fontSize: 12,
-    color: '#999',
-  },
+  purchasedSection: { marginTop: 20 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

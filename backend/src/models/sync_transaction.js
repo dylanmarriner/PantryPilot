@@ -11,7 +11,7 @@ const SyncTransaction = sequelize.define('SyncTransaction', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Users',
+      model: 'users',
       key: 'id'
     }
   },
@@ -83,7 +83,7 @@ const SyncTransaction = sequelize.define('SyncTransaction', {
 });
 
 // Associations
-SyncTransaction.associate = function(models) {
+SyncTransaction.associate = function (models) {
   SyncTransaction.belongsTo(models.User, {
     foreignKey: 'userId',
     as: 'user'

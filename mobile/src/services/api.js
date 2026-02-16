@@ -1,8 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_BASE_URL = __DEV__
-  ? 'http://localhost:3001/api'
-  : 'https://your-production-api.com/api';
+  ? "http://46.225.123.89:3000/api"
+  : "http://46.225.123.89:3000/api";
 
 class ApiService {
   constructor() {
@@ -12,8 +13,8 @@ class ApiService {
     });
 
     this.client.interceptors.request.use(
-      (config) => {
-        const token = this.getAuthToken();
+      async (config) => {
+        const token = await this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -21,7 +22,7 @@ class ApiService {
       },
       (error) => {
         return Promise.reject(error);
-      }
+      },
     );
 
     this.client.interceptors.response.use(
@@ -31,33 +32,33 @@ class ApiService {
           this.clearAuthToken();
         }
         return Promise.reject(error);
-      }
+      },
     );
   }
 
-  getAuthToken() {
+  async getAuthToken() {
     try {
-      return localStorage.getItem('authToken');
+      return await AsyncStorage.getItem("authToken");
     } catch (error) {
-      console.warn('Failed to get auth token from localStorage:', error);
+      console.warn("Failed to get auth token from AsyncStorage:", error);
       return null;
     }
   }
 
-  setAuthToken(token) {
+  async setAuthToken(token) {
     try {
       if (token) {
-        localStorage.setItem('authToken', token);
+        await AsyncStorage.setItem("authToken", token);
       } else {
-        localStorage.removeItem('authToken');
+        await AsyncStorage.removeItem("authToken");
       }
     } catch (error) {
-      console.warn('Failed to set auth token in localStorage:', error);
+      console.warn("Failed to set auth token in AsyncStorage:", error);
     }
   }
 
-  clearAuthToken() {
-    this.setAuthToken(null);
+  async clearAuthToken() {
+    await this.setAuthToken(null);
   }
 
   async get(endpoint, params = {}) {
@@ -102,15 +103,15 @@ class ApiService {
 
   handleError(error) {
     if (error.response) {
-      console.error('API Error:', {
+      console.error("API Error:", {
         status: error.response.status,
         data: error.response.data,
         url: error.config?.url,
       });
     } else if (error.request) {
-      console.error('Network Error:', error.message);
+      console.error("Network Error:", error.message);
     } else {
-      console.error('Error:', error.message);
+      console.error("Error:", error.message);
     }
   }
 
@@ -122,10 +123,12 @@ class ApiService {
       try {
         return await this.post(endpoint, data);
       } catch (error) {
-        if (error.code === 'NETWORK_ERROR' && retries < maxRetries - 1) {
+        if (error.code === "NETWORK_ERROR" && retries < maxRetries - 1) {
           retries++;
           // Exponential backoff
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, Math.pow(2, retries) * 1000),
+          );
           continue;
         }
         throw error;
@@ -134,15 +137,15 @@ class ApiService {
   }
 
   async getSyncStatus() {
-    return await this.get('/sync/status');
+    return await this.get("/sync/status");
   }
 
   async initiateSync(syncData) {
-    return await this.post('/sync/initiate', syncData);
+    return await this.post("/sync/initiate", syncData);
   }
 
   async getPendingOperations(clientId) {
-    return await this.get('/sync/pending', { clientId });
+    return await this.get("/sync/pending", { clientId });
   }
 }
 

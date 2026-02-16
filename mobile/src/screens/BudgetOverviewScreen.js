@@ -1,18 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   RefreshControl,
-  Dimensions 
-} from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
-import { useApi } from '../services/api';
+  Dimensions,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import { PieChart } from "react-native-chart-kit";
+import {
+  Wallet,
+  TrendingUp,
+  AlertCircle,
+  Clock,
+  ChevronLeft,
+} from "lucide-react-native";
+import { useApi } from "../services/api";
+import { Theme } from "../styles/DesignSystem";
+import GlassCard from "../components/GlassCard";
+import AuroraBackground from "../components/AuroraBackground";
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
-export default function BudgetOverviewScreen() {
+export default function BudgetOverviewScreen({ navigation }) {
   const [budgetData, setBudgetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -20,10 +32,11 @@ export default function BudgetOverviewScreen() {
 
   const loadBudgetData = async () => {
     try {
-      const data = await api.get('/budget');
+      // Real API call
+      const data = await api.get("/budget");
       setBudgetData(data);
     } catch (error) {
-      console.error('Failed to load budget data:', error);
+      console.error("Failed to load budget data:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -41,15 +54,20 @@ export default function BudgetOverviewScreen() {
 
   const preparePieChartData = () => {
     if (!budgetData?.breakdown) return [];
-    
-    const colors = ['#2196F3', '#4CAF50', '#FF9800', '#F44336', '#9C27B0', '#00BCD4'];
-    
+
+    const colors = [
+      Theme.colors.primary,
+      Theme.colors.secondary,
+      Theme.colors.warning,
+      Theme.colors.error,
+    ];
+
     return budgetData.breakdown.map((item, index) => ({
       name: item.category,
       population: item.amount,
       color: colors[index % colors.length],
-      legendFontColor: '#333',
-      legendFontSize: 12,
+      legendFontColor: Theme.colors.text.primary,
+      legendFontSize: 10,
     }));
   };
 
@@ -58,26 +76,24 @@ export default function BudgetOverviewScreen() {
   };
 
   const getBudgetStatus = () => {
-    if (!budgetData) return { color: '#666', text: 'Unknown' };
-    
+    if (!budgetData)
+      return { color: Theme.colors.text.dimmed, text: "UNKNOWN" };
     const percentage = (budgetData.spent / budgetData.total) * 100;
-    
-    if (percentage >= 100) {
-      return { color: '#F44336', text: 'Over Budget' };
-    } else if (percentage >= 80) {
-      return { color: '#FF9800', text: 'Near Limit' };
-    } else if (percentage >= 60) {
-      return { color: '#FFC107', text: 'On Track' };
-    } else {
-      return { color: '#4CAF50', text: 'Good' };
-    }
+
+    if (percentage >= 100)
+      return { color: Theme.colors.error, text: "CAPACITY EXCEEDED" };
+    if (percentage >= 80)
+      return { color: Theme.colors.warning, text: "CRITICAL THRESHOLD" };
+    return { color: Theme.colors.primary, text: "NOMINAL" };
   };
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Loading budget overview...</Text>
-      </View>
+      <AuroraBackground>
+        <View style={styles.center}>
+          <ActivityIndicator color={Theme.colors.primary} />
+        </View>
+      </AuroraBackground>
     );
   }
 
@@ -85,231 +101,250 @@ export default function BudgetOverviewScreen() {
   const pieChartData = preparePieChartData();
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <Text style={styles.title}>Budget Overview</Text>
-      
-      <View style={styles.summaryCard}>
-        <Text style={styles.cardTitle}>Monthly Budget</Text>
-        <Text style={styles.budgetTotal}>{formatCurrency(budgetData?.total || 0)}</Text>
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { 
-                  width: `${Math.min((budgetData?.spent || 0) / (budgetData?.total || 1) * 100, 100)}%`,
-                  backgroundColor: budgetStatus.color 
-                }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {formatCurrency(budgetData?.spent || 0)} / {formatCurrency(budgetData?.total || 0)}
-          </Text>
+    <AuroraBackground>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefres={onRefresh}
+            tintColor={Theme.colors.primary}
+          />
+        }
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>BUDGET ANALYTICS</Text>
+          <Text style={styles.statusLabel}>{budgetStatus.text}</Text>
         </View>
-        <Text style={[styles.statusText, { color: budgetStatus.color }]}>
-          {budgetStatus.text}
-        </Text>
-      </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Spending Breakdown</Text>
-        {pieChartData.length > 0 ? (
-          <>
+        <GlassCard style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <Wallet size={16} color={Theme.colors.primary} />
+            <Text style={styles.summaryLabel}>TOTAL CYCLE BUDGET</Text>
+          </View>
+          <Text style={styles.budgetTotal}>
+            {formatCurrency(budgetData?.total || 0)}
+          </Text>
+
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.min(((budgetData?.spent || 0) / (budgetData?.total || 1)) * 100, 100)}%`,
+                    backgroundColor: budgetStatus.color,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.progressLabels}>
+              <Text style={styles.spentText}>
+                {formatCurrency(budgetData?.spent || 0)} SPENT
+              </Text>
+              <Text style={styles.remainingText}>
+                {formatCurrency(
+                  (budgetData?.total || 0) - (budgetData?.spent || 0),
+                )}{" "}
+                REMAINING
+              </Text>
+            </View>
+          </View>
+        </GlassCard>
+
+        <GlassCard style={styles.card}>
+          <Text style={styles.sectionTitle}>ALLOCATION MATRIX</Text>
+          <View style={styles.chartContainer}>
             <PieChart
               data={pieChartData}
-              width={screenWidth - 40}
-              height={220}
+              width={screenWidth - 80}
+              height={180}
               chartConfig={{
-                color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
               }}
               accessor="population"
               backgroundColor="transparent"
-              paddingLeft="15"
-              center={[10, 10]}
+              paddingLeft="0"
+              center={[0, 0]}
               absolute
             />
-            <View style={styles.legendContainer}>
-              {pieChartData.map((item, index) => (
-                <View key={index} style={styles.legendItem}>
-                  <View 
-                    style={[styles.legendColor, { backgroundColor: item.color }]} 
-                  />
-                  <Text style={styles.legendText}>
-                    {item.name}: {formatCurrency(item.population)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        ) : (
-          <Text style={styles.noDataText}>No spending data available</Text>
-        )}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Budget Insights</Text>
-        {budgetData?.insights?.map((insight, index) => (
-          <View key={index} style={styles.insightItem}>
-            <Text style={styles.insightText}>{insight}</Text>
           </View>
-        )) || <Text style={styles.noDataText}>No insights available</Text>}
-      </View>
+        </GlassCard>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recent Transactions</Text>
-        {budgetData?.recentTransactions?.map((transaction, index) => (
-          <View key={index} style={styles.transactionItem}>
-            <View style={styles.transactionInfo}>
-              <Text style={styles.transactionDescription}>{transaction.description}</Text>
-              <Text style={styles.transactionDate}>
-                {new Date(transaction.date).toLocaleDateString()}
-              </Text>
-            </View>
-            <Text style={styles.transactionAmount}>
-              {formatCurrency(transaction.amount)}
-            </Text>
+        <GlassCard style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <TrendingUp size={14} color={Theme.colors.primary} />
+            <Text style={styles.sectionTitle}>T.O.M. INSIGHTS</Text>
           </View>
-        )) || <Text style={styles.noDataText}>No recent transactions</Text>}
-      </View>
-    </ScrollView>
+          {budgetData?.insights?.map((insight, index) => (
+            <View key={index} style={styles.insightItem}>
+              <AlertCircle
+                size={12}
+                color={Theme.colors.primary}
+                style={{ marginTop: 2 }}
+              />
+              <Text style={styles.insightText}>{insight}</Text>
+            </View>
+          ))}
+        </GlassCard>
+
+        <GlassCard style={styles.card}>
+          <View style={styles.sectionHeader}>
+            <Clock size={14} color={Theme.colors.primary} />
+            <Text style={styles.sectionTitle}>LEDGER LOGS</Text>
+          </View>
+          {budgetData?.recentTransactions?.map((tr, idx) => (
+            <View key={idx} style={styles.transactionItem}>
+              <View>
+                <Text style={styles.trDesc}>
+                  {tr.description.toUpperCase()}
+                </Text>
+                <Text style={styles.trDate}>
+                  {new Date(tr.date).toLocaleDateString()}
+                </Text>
+              </View>
+              <Text style={styles.trAmount}>{formatCurrency(tr.amount)}</Text>
+            </View>
+          ))}
+        </GlassCard>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </AuroraBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  container: { flex: 1 },
+  header: {
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "baseline",
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    padding: 20,
-    paddingBottom: 10,
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 4,
+  },
+  statusLabel: {
+    color: Theme.colors.primary,
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
   summaryCard: {
-    backgroundColor: 'white',
-    margin: 15,
-    padding: 20,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    margin: 20,
+    padding: 24,
+    gap: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
   },
-  card: {
-    backgroundColor: 'white',
-    margin: 15,
-    padding: 20,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+  summaryLabel: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
   },
   budgetTotal: {
+    color: "#FFF",
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#2196F3',
-    textAlign: 'center',
-    marginBottom: 20,
+    fontWeight: "900",
   },
-  progressContainer: {
-    marginBottom: 15,
-  },
+  progressContainer: { gap: 8 },
   progressBar: {
     height: 8,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 4,
-    marginBottom: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 3,
+    overflow: "hidden",
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
+  progressFill: { height: "100%" },
+  progressLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
-  progressText: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#666',
+  spentText: {
+    color: Theme.colors.text.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
-  statusText: {
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
+  remainingText: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "700",
   },
-  legendContainer: {
-    marginTop: 15,
+  card: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    gap: 16,
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
   },
-  legendColor: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+  sectionTitle: {
+    color: Theme.colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1.5,
   },
-  legendText: {
-    fontSize: 12,
-    color: '#333',
+  chartContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
   },
   insightItem: {
-    backgroundColor: '#f8f9fa',
+    flexDirection: "row",
+    gap: 10,
     padding: 12,
-    borderRadius: 6,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#2196F3',
+    borderRadius: 12,
+    backgroundColor: "rgba(34, 211, 238, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(34, 211, 238, 0.1)",
   },
   insightText: {
+    flex: 1,
+    color: Theme.colors.text.primary,
     fontSize: 14,
-    color: '#333',
+    fontWeight: "600",
+    lineHeight: 20,
   },
   transactionItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
-  transactionInfo: {
-    flex: 1,
+  trDesc: {
+    color: "#FFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
-  transactionDescription: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 2,
-  },
-  transactionDate: {
+  trDate: {
+    color: Theme.colors.text.dimmed,
     fontSize: 12,
-    color: '#666',
+    fontWeight: "600",
   },
-  transactionAmount: {
+  trAmount: {
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "900",
   },
-  noDataText: {
-    textAlign: 'center',
-    color: '#666',
-    fontStyle: 'italic',
-    padding: 20,
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

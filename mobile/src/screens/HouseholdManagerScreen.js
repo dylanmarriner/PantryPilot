@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,19 +9,35 @@ import {
   Modal,
   TextInput,
   ScrollView,
-  ActivityIndicator
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import {
+  Home,
+  UserPlus,
+  PlusCircle,
+  ChevronRight,
+  LogOut,
+  Shield,
+  Users,
+  X,
+  CreditCard,
+} from "lucide-react-native";
+import { useApi } from "../services/api";
+import { Theme } from "../styles/DesignSystem";
+import GlassCard from "../components/GlassCard";
+import AuroraBackground from "../components/AuroraBackground";
 
 const HouseholdManagerScreen = ({ navigation, route }) => {
-  const { user } = route.params;
+  const user = route.params?.user || {};
   const [households, setHouseholds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [joinModalVisible, setJoinModalVisible] = useState(false);
-  const [newHouseholdName, setNewHouseholdName] = useState('');
-  const [joinCode, setJoinCode] = useState('');
-  const [selectedHousehold, setSelectedHousehold] = useState(null);
+  const [newHouseholdName, setNewHouseholdName] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+
+  const api = useApi();
 
   useEffect(() => {
     loadHouseholds();
@@ -30,12 +46,10 @@ const HouseholdManagerScreen = ({ navigation, route }) => {
   const loadHouseholds = async () => {
     try {
       setLoading(true);
-      // API call to get user's households
-      const response = await fetch(`/api/users/${user.id}/households`);
-      const data = await response.json();
+      const data = await api.get(`/users/${user.id}/households`);
       setHouseholds(data);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load households');
+      console.error("Failed to load households:", error);
     } finally {
       setLoading(false);
     }
@@ -43,398 +57,380 @@ const HouseholdManagerScreen = ({ navigation, route }) => {
 
   const createHousehold = async () => {
     if (!newHouseholdName.trim()) {
-      Alert.alert('Error', 'Please enter a household name');
+      Alert.alert("PROTOCOL ERROR", "HOUSEHOLD NOMENCLATURE REQUIRED");
       return;
     }
 
     try {
-      const response = await fetch('/api/households', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newHouseholdName,
-          timezone: 'UTC',
-          currency: 'USD'
-        })
+      await api.post("/households", {
+        name: newHouseholdName,
+        timezone: "UTC",
+        currency: "USD",
       });
-
-      if (response.ok) {
-        setModalVisible(false);
-        setNewHouseholdName('');
-        loadHouseholds();
-        Alert.alert('Success', 'Household created successfully');
-      } else {
-        Alert.alert('Error', 'Failed to create household');
-      }
+      setModalVisible(false);
+      setNewHouseholdName("");
+      loadHouseholds();
+      Alert.alert("SUCCESS", "NEW HOUSEHOLD SECTOR INITIALIZED");
     } catch (error) {
-      Alert.alert('Error', 'Failed to create household');
+      Alert.alert("SYSTEM ERROR", "FAILED TO INITIALIZE HOUSEHOLD SECTOR");
     }
   };
 
   const joinHousehold = async () => {
     if (!joinCode.trim()) {
-      Alert.alert('Error', 'Please enter a join code');
+      Alert.alert("PROTOCOL ERROR", "ACCESS CODE REQUIRED");
       return;
     }
 
     try {
-      const response = await fetch('/api/households/join', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          joinCode: joinCode.trim()
-        })
+      await api.post("/households/join", {
+        joinCode: joinCode.trim(),
       });
-
-      if (response.ok) {
-        setJoinModalVisible(false);
-        setJoinCode('');
-        loadHouseholds();
-        Alert.alert('Success', 'Joined household successfully');
-      } else {
-        Alert.alert('Error', 'Invalid join code');
-      }
+      setJoinModalVisible(false);
+      setJoinCode("");
+      loadHouseholds();
+      Alert.alert("SUCCESS", "LINK ESTABLISHED WITH EXTERNAL HOUSEHOLD");
     } catch (error) {
-      Alert.alert('Error', 'Failed to join household');
+      Alert.alert("SECURITY ERROR", "INVALID ACCESS CODE OR LINK REFUSED");
     }
   };
 
   const leaveHousehold = async (householdId) => {
     Alert.alert(
-      'Leave Household',
-      'Are you sure you want to leave this household?',
+      "TERMINATE LINK",
+      "CONFIRM DECOUPLING FROM THIS HOUSEHOLD SECTOR?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "CANCEL", style: "cancel" },
         {
-          text: 'Leave',
-          style: 'destructive',
+          text: "DECOUPLE",
+          style: "destructive",
           onPress: async () => {
             try {
-              const response = await fetch(`/api/households/${householdId}/leave`, {
-                method: 'POST'
-              });
-
-              if (response.ok) {
-                loadHouseholds();
-                Alert.alert('Success', 'Left household successfully');
-              } else {
-                Alert.alert('Error', 'Failed to leave household');
-              }
+              await api.post(`/households/${householdId}/leave`);
+              loadHouseholds();
+              Alert.alert("SUCCESS", "LINK TERMINATED");
             } catch (error) {
-              Alert.alert('Error', 'Failed to leave household');
+              Alert.alert("SYSTEM ERROR", "FAILED TO DECOUPLE FROM SECTOR");
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   const selectHousehold = (household) => {
-    setSelectedHousehold(household);
-    navigation.navigate('Dashboard', { household, user });
+    navigation.navigate("Dashboard", { household, user });
   };
 
   const renderHouseholdItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.householdItem}
-      onPress={() => selectHousehold(item)}
-    >
-      <View style={styles.householdInfo}>
-        <Text style={styles.householdName}>{item.name}</Text>
-        <Text style={styles.householdRole}>Role: {item.UserHousehold?.role?.name}</Text>
-        <Text style={styles.householdMembers}>
-          {item.userCount || 0} members • {item.subscriptionTier || 'free'} tier
-        </Text>
-      </View>
-      <View style={styles.householdActions}>
-        <TouchableOpacity
-          style={styles.selectButton}
-          onPress={() => selectHousehold(item)}
-        >
-          <Ionicons name="chevron-forward" size={20} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.leaveButton}
-          onPress={() => leaveHousehold(item.id)}
-        >
-          <Ionicons name="exit-outline" size={20} color="#FF3B30" />
-        </TouchableOpacity>
-      </View>
+    <TouchableOpacity onPress={() => selectHousehold(item)}>
+      <GlassCard style={styles.householdItem}>
+        <View style={styles.householdInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.householdName}>{item.name.toUpperCase()}</Text>
+            <View style={styles.roleBadge}>
+              <Shield size={10} color={Theme.colors.primary} />
+              <Text style={styles.roleText}>
+                {item.UserHousehold?.role?.name || "MEMBER"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Users size={12} color={Theme.colors.text.dimmed} />
+              <Text style={styles.metaText}>{item.userCount || 1} NODES</Text>
+            </View>
+            <View style={styles.metaSeparator} />
+            <View style={styles.metaItem}>
+              <CreditCard size={12} color={Theme.colors.text.dimmed} />
+              <Text style={styles.metaText}>
+                {item.subscriptionTier?.toUpperCase() || "STANDARD"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.leaveBtnCell}
+            onPress={() => leaveHousehold(item.id)}
+          >
+            <LogOut size={18} color={Theme.colors.error} />
+          </TouchableOpacity>
+          <ChevronRight size={20} color={Theme.colors.text.dimmed} />
+        </View>
+      </GlassCard>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading households...</Text>
-      </View>
+      <AuroraBackground>
+        <View style={styles.center}>
+          <ActivityIndicator color={Theme.colors.primary} />
+        </View>
+      </AuroraBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Households</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setJoinModalVisible(true)}
-          >
-            <Ionicons name="person-add-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => setModalVisible(true)}
-          >
-            <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <FlatList
-        data={households}
-        renderItem={renderHouseholdItem}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="home-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyText}>No households yet</Text>
-            <Text style={styles.emptySubtext}>
-              Create a new household or join an existing one
-            </Text>
+    <AuroraBackground>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>HOUSEHOLD CORE</Text>
+            <Text style={styles.subtitle}>ACTIVE SECTOR MANAGEMENT</Text>
           </View>
-        }
-      />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => setJoinModalVisible(true)}
+              style={styles.headerBtn}
+            >
+              <UserPlus size={20} color={Theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalVisible(true)}
+              style={styles.headerBtn}
+            >
+              <PlusCircle size={20} color={Theme.colors.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      {/* Create Household Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Household</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Household name"
-              value={newHouseholdName}
-              onChangeText={setNewHouseholdName}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
+        <FlatList
+          data={households}
+          renderItem={renderHouseholdItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Home
+                size={60}
+                color={Theme.colors.text.dimmed}
+                strokeWidth={1}
+              />
+              <Text style={styles.emptyText}>NO ACTIVE SECTORS FOUND</Text>
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
+                style={styles.emptyBtn}
+                onPress={() => setModalVisible(true)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.emptyBtnText}>INITIALIZE NEW CORE</Text>
               </TouchableOpacity>
+            </View>
+          }
+        />
+
+        {/* Create Modal */}
+        <Modal transparent visible={modalVisible} animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <GlassCard style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>INITIALIZE CORE</Text>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <X size={20} color={Theme.colors.text.dimmed} />
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="SECTOR IDENTITY..."
+                placeholderTextColor={Theme.colors.text.dimmed}
+                value={newHouseholdName}
+                onChangeText={setNewHouseholdName}
+                autoFocus
+              />
               <TouchableOpacity
-                style={[styles.button, styles.createButton]}
+                style={styles.submitBtn}
                 onPress={createHousehold}
               >
-                <Text style={styles.createButtonText}>Create</Text>
+                <Text style={styles.submitBtnText}>CONFIRM INITIALIZATION</Text>
               </TouchableOpacity>
-            </View>
+            </GlassCard>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Join Household Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={joinModalVisible}
-        onRequestClose={() => setJoinModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Join Household</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter join code"
-              value={joinCode}
-              onChangeText={setJoinCode}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
+        {/* Join Modal */}
+        <Modal transparent visible={joinModalVisible} animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <GlassCard style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>LINK SECTOR</Text>
+                <TouchableOpacity onPress={() => setJoinModalVisible(false)}>
+                  <X size={20} color={Theme.colors.text.dimmed} />
+                </TouchableOpacity>
+              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="ACCESS CODE..."
+                placeholderTextColor={Theme.colors.text.dimmed}
+                value={joinCode}
+                onChangeText={setJoinCode}
+                autoFocus
+                autoCapitalize="characters"
+              />
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton]}
-                onPress={() => setJoinModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, styles.createButton]}
+                style={styles.submitBtn}
                 onPress={joinHousehold}
               >
-                <Text style={styles.createButtonText}>Join</Text>
+                <Text style={styles.submitBtnText}>ESTABLISH LINK</Text>
               </TouchableOpacity>
-            </View>
+            </GlassCard>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </AuroraBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#8E8E93',
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "900",
+    letterSpacing: 4,
   },
-  headerActions: {
-    flexDirection: 'row',
-  },
-  actionButton: {
-    marginLeft: 16,
-    padding: 8,
-  },
-  list: {
-    flex: 1,
-  },
-  householdItem: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  householdInfo: {
-    flex: 1,
-  },
-  householdName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-  },
-  householdRole: {
-    fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 2,
-  },
-  householdMembers: {
+  subtitle: {
+    color: Theme.colors.primary,
     fontSize: 12,
-    color: '#8E8E93',
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginTop: 4,
   },
-  householdActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerActions: { flexDirection: "row", gap: 10 },
+  headerBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  selectButton: {
-    padding: 8,
-    marginRight: 8,
+  listContent: { padding: 20, gap: 16 },
+  householdItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    gap: 16,
   },
-  leaveButton: {
-    padding: 8,
+  householdInfo: { flex: 1, gap: 8 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  householdName: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  emptyContainer: {
+  roleBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(34, 211, 238, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(34, 211, 238, 0.2)",
+  },
+  roleText: {
+    color: Theme.colors.primary,
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  metaText: {
+    color: Theme.colors.text.dimmed,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  metaSeparator: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
+  actions: { flexDirection: "row", alignItems: "center", gap: 16 },
+  leaveBtnCell: { padding: 4 },
+  empty: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 100,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 120,
+    gap: 24,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#8E8E93',
-    marginTop: 16,
+    color: Theme.colors.text.dimmed,
+    fontSize: 15,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
-  emptySubtext: {
+  emptyBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: Theme.colors.primary,
+  },
+  emptyBtnText: {
+    color: "#000",
     fontSize: 14,
-    color: '#C7C7CC',
-    marginTop: 8,
-    textAlign: 'center',
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  modalContainer: {
+  modalBackdrop: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    padding: 20,
   },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    margin: 20,
-    padding: 24,
-    borderRadius: 12,
+  modalCard: { padding: 24, gap: 20 },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#000000',
-    marginBottom: 20,
+    color: Theme.colors.primary,
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 1,
   },
   input: {
+    height: 56,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "600",
     borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  submitBtn: {
+    height: 50,
+    backgroundColor: Theme.colors.primary,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginLeft: 12,
+  submitBtnText: {
+    color: "#000",
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  cancelButton: {
-    backgroundColor: '#F2F2F7',
-  },
-  cancelButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  createButton: {
-    backgroundColor: '#007AFF',
-  },
-  createButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
 
 export default HouseholdManagerScreen;

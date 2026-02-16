@@ -1,5 +1,4 @@
 const { Item, StockEntry } = require('../models');
-const { sequelize } = require('../models');
 const InventoryService = require('../services/inventory');
 
 class DashboardController {

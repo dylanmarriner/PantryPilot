@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'householdId',
         as: 'households'
       });
-      
+
       User.hasMany(models.UserHousehold, {
         foreignKey: 'userId',
         as: 'userHouseholds'
@@ -72,6 +72,10 @@ module.exports = (sequelize, DataTypes) => {
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true
+    },
+    isAdmin: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     lastLoginAt: {
       type: DataTypes.DATE
