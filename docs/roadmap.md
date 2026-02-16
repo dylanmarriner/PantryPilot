@@ -1,5 +1,7 @@
-Perfect. We’re not coding yet.
-We’re defining the build contract.
+# PantryPilot Roadmap
+
+> [!NOTE]
+> This roadmap defines the build contract for the PantryPilot platform.
 
 Below is the **detailed PantryPilot roadmap**, structured so Antigravity can convert each phase into executable plans and Windsurf can implement them cleanly.
 
@@ -9,7 +11,7 @@ No fluff. Just build order.
 
 ---
 
-# 🧭 PantryPilot — Master Roadmap
+## 🧭 PantryPilot — Master Roadmap
 
 **Model:** Grocery-First Household Intelligence Platform
 **Deployment:** VPS Core + Optional Local Node
@@ -18,178 +20,177 @@ No fluff. Just build order.
 
 ---
 
-# 🧱 PHASE 0 — Foundation & Governance
+## 🧱 PHASE 0 — Foundation & Governance
 
-### Objective
+## Objective
 
 Create deterministic, production-ready scaffold.
 
-### Deliverables
+## Phase 0 Deliverables
 
-* Monorepo structure:
+```text
+/backend
+/mobile
+/infra
+/workers
+/docs
+/plans
+```
 
-  ```
-  /backend
-  /mobile
-  /infra
-  /workers
-  /docs
-  /plans
-  ```
-* Docker Compose baseline
-* VPS provisioning script (Ubuntu 24.04)
-* Reverse proxy (Caddy or Nginx)
-* CI pipeline (lint + tests)
-* Plan validation system (for Antigravity governance)
+- Docker Compose baseline
+- VPS provisioning script (Ubuntu 24.04)
+- Reverse proxy (Caddy or Nginx)
+- CI pipeline (lint + tests)
+- Plan validation system (for Antigravity governance)
 
 ### Success Criteria
 
-* Containers boot cleanly
-* Health endpoint returns OK
-* DB connection verified
-* CI passing
+- Containers boot cleanly
+- Health endpoint returns OK
+- DB connection verified
+- CI passing
 
 ---
 
-# 🧂 PHASE 1 — Core Data & Inventory Engine (Deterministic Core)
+## 🧂 PHASE 1 — Core Data & Inventory Engine
 
-### Objective
+## Phase 1 Objective
 
 Build the inventory brain. No AI yet.
 
-### Data Models
+## Phase 1 Data Models
 
-* Household
-* User
-* Item
-* Category
-* Location (pantry/fridge/freezer)
-* StockEntry
-* Unit
-* UnitConversion
-* ReorderThreshold
-* Expiry
+- Household
+- User
+- Item
+- Category
+- Location (pantry/fridge/freezer)
+- StockEntry
+- Unit
+- UnitConversion
+- ReorderThreshold
+- Expiry
 
-### Features
+## Phase 1 Features
 
-* Add item
-* Adjust quantity
-* Deduct quantity
-* Unit normalization layer
-* Alias mapping (mince = beef mince)
-* Reorder trigger logic
+- Add item
+- Adjust quantity
+- Deduct quantity
+- Unit normalization layer
+- Alias mapping (mince = beef mince)
+- Reorder trigger logic
 
-### Hard Problems Solved Here
+## Phase 1 Hard Problems Solved
 
-* Partial usage
-* g ↔ kg
-* ml ↔ L
-* “1 jar” normalization
-* Floating quantity safety
+- Partial usage
+- g ↔ kg
+- ml ↔ L
+- “1 jar” normalization
+- Floating quantity safety
 
 ### Success Criteria
 
-* Stock math 100% deterministic
-* Test coverage for unit conversion
-* Edge cases handled
+- Stock math 100% deterministic
+- Test coverage for unit conversion
+- Edge cases handled
 
 This phase is the backbone of everything.
 
 ---
 
-# 🛒 PHASE 2 — Pricing Engine
+## 🛒 PHASE 2 — Pricing Engine
 
-### Objective
+## Phase 2 Objective
 
 Store and optimize grocery prices.
 
-### Data Models
+## Phase 2 Data Models
 
-* Store
-* SKU
-* PriceSnapshot
-* PriceHistory
-* SaleFlag
+- Store
+- SKU
+- PriceSnapshot
+- PriceHistory
+- SaleFlag
 
 ### Features
 
-* Manual price entry
-* Price-per-unit calculation
-* Cheapest item resolver
-* Cheapest basket simulation
-* Historical price comparison
+- Manual price entry
+- Price-per-unit calculation
+- Cheapest item resolver
+- Cheapest basket simulation
+- Historical price comparison
 
-### Worker
+## Phase 2 Worker
 
-* Scheduled nightly job framework (no scraping yet)
+- Scheduled nightly job framework (no scraping yet)
 
-### Success Criteria
+## Phase 2 Success Criteria
 
-* Can simulate a basket and calculate total cost
-* Price per unit consistent
+- Can simulate a basket and calculate total cost
+- Price per unit consistent
 
 ---
 
-# 🍽 PHASE 3 — Meal Attachment Layer
+## 🍽 PHASE 3 — Meal Attachment Layer
 
-### Objective
+## Phase 3 Objective
 
 Meals consume inventory, not control it.
 
-### Data Models
+## Phase 3 Data Models
 
-* MealTemplate
-* MealIngredient
-* MealLog
+- MealTemplate
+- MealIngredient
+- MealLog
 
-### Features
+## Phase 3 Features
 
-* Create meal template
-* Deduct ingredients on log
-* Auto-cost meal based on prices
-* Suggest cheaper ingredient alternatives
-* Validate stock availability
+- Create meal template
+- Deduct ingredients on log
+- Auto-cost meal based on prices
+- Suggest cheaper ingredient alternatives
+- Validate stock availability
 
-### Success Criteria
+## Phase 3 Success Criteria
 
-* Logging meal deducts inventory correctly
-* Cost displayed accurately
-* Suggest substitution when price difference exceeds threshold
+- Logging meal deducts inventory correctly
+- Cost displayed accurately
+- Suggest substitution when price difference exceeds threshold
 
 ---
 
-# 🎒 PHASE 4 — Lunch Variation Engine
+## 🎒 PHASE 4 — Lunch Variation Engine
 
 ### Objective
 
 Solve boredom and rotation intelligently.
 
-### Data Models
+## Phase 4 Data Models
 
-* LunchSlot
-* ItemPreference
-* FatigueScore
-* AcceptanceScore
+- LunchSlot
+- ItemPreference
+- FatigueScore
+- AcceptanceScore
 
 ### Features
 
-* Slot-based lunch structure
-* Fatigue increment logic
-* Cooldown reset logic
-* Stock-aware rotation
-* Price-aware rotation
+- Slot-based lunch structure
+- Fatigue increment logic
+- Cooldown reset logic
+- Stock-aware rotation
+- Price-aware rotation
 
 ### Success Criteria
 
-* No item repeated beyond rule
-* Fatigue reduces probability
-* Stock depletion updates future suggestions
+- No item repeated beyond rule
+- Fatigue reduces probability
+- Stock depletion updates future suggestions
 
 This is what makes PantryPilot unique.
 
 ---
 
-# 🧠 PHASE 5 — AI Interpretation Layer
+## 🧠 PHASE 5 — AI Interpretation Layer
 
 ### Objective
 
@@ -197,66 +198,67 @@ Enable natural language + voice logging.
 
 ### Components
 
-* Text parser endpoint
-* Structured action extractor
-* Meal detection logic
-* Ingredient inference
-* Substitution suggestion engine
+- Text parser endpoint
+- Structured action extractor
+- Meal detection logic
+- Ingredient inference
+- Substitution suggestion engine
 
-### Features
+## Phase 5 Features
 
-* Parse:
+- Parse:
 
   > “We had tacos and yoghurt and I packed LCM.”
-* Convert to structured logs
-* Suggest lunch alternatives
-* Weekly grocery suggestion
 
-### Guardrails
+- Convert to structured logs
+- Suggest lunch alternatives
+- Weekly grocery suggestion
 
-* AI never updates DB directly
-* All actions validated by deterministic layer
+## Phase 5 Guardrails
 
-### Success Criteria
+- AI never updates DB directly
+- All actions validated by deterministic layer
 
-* > 90% correct structured interpretation
-* No silent DB corruption
+## Phase 5 Success Criteria
+
+- > 90% correct structured interpretation
+- No silent DB corruption
 
 ---
 
-# 📱 PHASE 6 — Android App (React Native)
+## 📱 PHASE 6 — Android App (React Native) ✅
 
 ### Objective
 
-Create user interface.
+Create user interface and mobile experience.
 
-### Screens
+## Phase 6 Screens
 
-* Auth
-* Dashboard
-* Inventory
-* Add Item
-* Log Today (chat + mic)
-* Lunch Planner
-* Grocery List
-* Budget Overview
+- Auth
+- Dashboard
+- Inventory
+- Add Item
+- Log Today (chat + mic)
+- Lunch Planner
+- Grocery List
+- Budget Overview
 
-### Voice Flow
+## Phase 6 Voice Flow
 
-* Mic capture
-* OS speech-to-text
-* Send to backend
-* Structured response returned
+- Mic capture
+- OS speech-to-text
+- Send to backend
+- Structured response returned
 
 ### Success Criteria
 
-* Full logging via phone
-* Stock updates reflected immediately
-* Clean UX, no logic in app
+- Full logging via phone
+- Stock updates reflected immediately
+- Clean UX, no logic in app
 
 ---
 
-# 🛒 PHASE 7 — Automated Scraping Worker
+## 🛒 PHASE 7 — Automated Scraping Worker
 
 ### Objective
 
@@ -264,32 +266,32 @@ Add live supermarket pricing.
 
 ### Components
 
-* Playwright worker
-* Scraper abstraction per store
-* Retry logic
-* Price validation
+- Playwright worker
+- Scraper abstraction per store
+- Retry logic
+- Price validation
 
-### Features
+## Phase 7 Features
 
-* NZ supermarkets integration
-* Snapshot storage
-* Sale detection
-* Change alerts
+- NZ supermarkets integration
+- Snapshot storage
+- Sale detection
+- Change alerts
 
-### Risk
+## Phase 7 Risk
 
-* Anti-bot mitigation
-* IP blocking
+- Anti-bot mitigation
+- IP blocking
 
-### Mitigation
+## Phase 7 Mitigation
 
-* Local node scraping fallback
-* Rotating user agents
-* Throttled crawling
+- Local node scraping fallback
+- Rotating user agents
+- Throttled crawling
 
 ---
 
-# 🌍 PHASE 8 — Hybrid Sync Layer
+## 🌍 PHASE 8 — Hybrid Sync Layer
 
 ### Objective
 
@@ -297,36 +299,38 @@ Enable local node support.
 
 ### Components
 
-* Sync client
-* Conflict resolution rules
-* Offline logging queue
-* Bi-directional sync
+- Sync client
+- Conflict resolution rules
+- Offline logging queue
+- Bi-directional sync
 
-### Success Criteria
+## Phase 8 Success Criteria
 
-* Offline logging possible
-* Sync reconciles without duplication
-* Deterministic conflict rules
+- Offline logging possible
+- Sync reconciles without duplication
+- Deterministic conflict rules
 
 ---
 
-# 💰 PHASE 9 — Product-Ready Expansion
+## 💰 PHASE 9 — Product-Ready Expansion ✅
 
 ### Features
 
-* Multi-household support
-* Role-based permissions
-* Subscription-ready schema
-* Feature flags
-* Usage analytics
-* Cost savings dashboard
-* Export reports
+- [x] Multi-household support
+- [x] Role-based permissions
+- [x] Feature flags
+- [x] Production deployment (VPS & Render.com)
+- [x] Mobile UI Readability Overhaul
+- [ ] Subscription-ready schema
+- [ ] Usage analytics
+- [ ] Cost savings dashboard
+- [ ] Export reports
 
 Now it’s SaaS-capable.
 
 ---
 
-# 🧠 Strategic Execution Order
+## 🧠 Strategic Execution Order
 
 We do NOT jump to AI or Android early.
 
@@ -347,18 +351,18 @@ UI comes earlier than normal to keep momentum.
 
 ---
 
-# 🏁 Final Vision of PantryPilot
+## 🏁 Final Vision of PantryPilot
 
 When complete, PantryPilot will:
 
-* Track every grocery item
-* Predict reorder needs
-* Suggest cheapest substitutions
-* Rotate school lunches intelligently
-* Optimize weekly basket cost
-* Handle voice logging
-* Support multi-device
-* Scale to SaaS
+- Track every grocery item
+- Predict reorder needs
+- Suggest cheapest substitutions
+- Rotate school lunches intelligently
+- Optimize weekly basket cost
+- Handle voice logging
+- Support multi-device
+- Scale to SaaS
 
 All grocery-first.
 
@@ -371,6 +375,6 @@ so it becomes executable phase plans under governance.
 
 Do you want it in:
 
-* Atlas-Gate style
-* Marr’Kena style
-* Or neutral standalone governance mode?
+- Atlas-Gate style
+- Marr’Kena style
+- Or neutral standalone governance mode?
