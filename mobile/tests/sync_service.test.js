@@ -1,16 +1,28 @@
-import syncService from '../src/services/sync_service';
-import { api } from '../src/services/api';
 import SyncQueue from '../src/utils/sync_queue';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Mock dependencies
-jest.mock('../src/services/api');
+// Mock dependencies FIRST before importing syncService
 jest.mock('../src/utils/sync_queue');
 jest.mock('@react-native-async-storage/async-storage');
+jest.mock('../src/services/api', () => ({
+  api: {
+    post: jest.fn(),
+    get: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+  }
+}));
+
+import syncService from '../src/services/sync_service';
+import { api } from '../src/services/api';
 
 describe('syncService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear listeners from previous tests
+    syncService.listeners.clear();
+    syncService.isOnline = true;
+    syncService.syncInProgress = false;
   });
 
   describe('queueOperation', () => {
@@ -95,37 +107,41 @@ describe('syncService', () => {
       ];
 
       const mockResponse = {
+        success: true,
         data: {
-          success: true,
-          data: {
-            syncId: 'sync-123',
-            serverChanges: [
-              {
-                type: 'INVENTORY_ADJUSTMENT',
-                data: { itemId: 'item-2', newQuantity: 10 },
-                version: 2
-              }
-            ],
-            clientResults: [
-              {
-                operationId: 'op-1',
-                status: 'SUCCESS',
-                result: { itemId: 'item-1', newQuantity: 15 }
-              }
-            ],
-            conflicts: [],
-            timestamp: '2023-01-01T12:05:00Z'
-          }
+          syncId: 'sync-123',
+          serverChanges: [
+            {
+              type: 'INVENTORY_ADJUSTMENT',
+              data: { itemId: 'item-2', newQuantity: 10 },
+              version: 2
+            }
+          ],
+          clientResults: [
+            {
+              operationId: 'op-1',
+              status: 'SUCCESS',
+              result: { itemId: 'item-1', newQuantity: 15 }
+            }
+          ],
+          conflicts: [],
+          timestamp: '2023-01-01T12:05:00Z'
         }
       };
 
-      // Mock dependencies
+      // Mock dependencies - use jest.spyOn to ensure mocks are applied
       syncService.syncQueue.getAll = jest.fn().mockResolvedValue(mockPendingOperations);
-      AsyncStorage.getItem.mockResolvedValue('2023-01-01T10:00:00Z');
+      const mockClientId = 'client-123';
+      AsyncStorage.getItem.mockImplementation((key) => {
+        if (key === 'client_id') return Promise.resolve(mockClientId);
+        if (key === 'last_sync_timestamp') return Promise.resolve('2023-01-01T10:00:00Z');
+        return Promise.resolve(null);
+      });
+      
+      // Setup api.post mock (it's already a jest.fn)
       api.post.mockResolvedValue(mockResponse);
+      
       syncService.syncQueue.remove = jest.fn().mockResolvedValue();
-      syncService.processServerChanges = jest.fn().mockResolvedValue();
-      syncService.handleConflicts = jest.fn().mockResolvedValue();
       AsyncStorage.setItem.mockResolvedValue();
 
       // Mock listener
@@ -153,14 +169,25 @@ describe('syncService', () => {
       expect(mockListener).toHaveBeenCalledWith({
         type: 'SYNC_COMPLETED',
         operations: mockPendingOperations,
-        serverChanges: mockResponse.data.data.serverChanges,
+        serverChanges: mockResponse.data.serverChanges,
         conflicts: []
       });
     });
 
     it('should handle sync failure', async () => {
-      syncService.syncQueue.getAll = jest.fn().mockResolvedValue([]);
-      AsyncStorage.getItem.mockResolvedValue(null);
+      const mockPendingOperations = [
+        {
+          id: 'op-1',
+          type: 'INVENTORY_ADJUSTMENT',
+          data: { itemId: 'item-1', adjustment: -5 }
+        }
+      ];
+      syncService.syncQueue.getAll = jest.fn().mockResolvedValue(mockPendingOperations);
+      const mockClientId = 'client-123';
+      AsyncStorage.getItem.mockImplementation((key) => {
+        if (key === 'client_id') return Promise.resolve(mockClientId);
+        return Promise.resolve(null);
+      });
       api.post.mockRejectedValue(new Error('Network error'));
 
       const mockListener = jest.fn();

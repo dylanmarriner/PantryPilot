@@ -59,13 +59,29 @@ export default function TomTerminal({ visible, onClose }) {
         setMessages(prev => [...prev, userMsg]);
         setInput('');
 
-        // Mock Response
-        setTimeout(() => {
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                text: "UNDERSTOOD. SYNCING DATA TO CORE HUB. OPTIMIZING INVENTORY PROTOCOLS."
-            }]);
-        }, 1000);
+        const command = input.trim().toUpperCase();
+        let response;
+
+        if (command.includes('SYNC')) {
+            response = { role: 'assistant', text: 'SYNC PROTOCOL INITIATED. PENDING OPERATIONS QUEUED FOR TRANSMISSION.' };
+        } else if (command.includes('STATUS')) {
+            response = { 
+                role: 'assistant', 
+                text: 'SYSTEM STATUS: NOMINAL. NO ACTIVE ALARMS. INVENTORY CORE RESPONSIVE.'
+            };
+        } else if (command.includes('CLEAR')) {
+            setMessages([{ role: 'assistant', text: 'TACTICAL OPERATIONS MANAGER ONLINE. AWAITING SYNC INSTRUCTIONS.' }]);
+            return;
+        } else if (command.includes('HELP')) {
+            response = { 
+                role: 'assistant', 
+                text: 'AVAILABLE COMMANDS: SYNC | STATUS | CLEAR | HELP'
+            };
+        } else {
+            response = { role: 'assistant', text: 'COMMAND NOT RECOGNIZED. TYPE HELP FOR AVAILABLE COMMANDS.' };
+        }
+
+        setMessages(prev => [...prev, response]);
     };
 
     return (

@@ -10,7 +10,7 @@ module.exports = {
     '!src/**/*.test.{js,jsx}',
     '!src/**/*.stories.{js,jsx}',
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transformIgnorePatterns: [

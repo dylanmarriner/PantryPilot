@@ -51,16 +51,13 @@ Public Key: /home/user/atlas-gate/.cosign/cosign.pub
    - This unlocks write access
    - Required before ANY file writes
 3. **Read plan file** using `read_file` with Plan Path
-4. **Verify plan format** - check for required sections
-5. **Compute hash** of plan (strip HTML comment header, compute SHA256)
-6. **Compare hash** - computed hash MUST match Plan Hash exactly
-7. **If hash fails** → STOP immediately, do NOT execute
+4. **Read required changes** - understand instructions for the files in the scope.
 
 ---
 
 ## PLAN ANATOMY
 
-Plans have this exact structure:
+Plans have this structure:
 
 ```
 <!--
@@ -92,47 +89,20 @@ STATUS: APPROVED
 ...
 ```
 
-All 7 sections required. HTML comment is stripped before signature verification.
+All sections are required.
 
 ---
 
 ## EXECUTION SEQUENCE
 
-### Step 1: Signature Verification (Cosign)
+### Step 1: Automatic Cryptographic Verification
 
-```
-1. Read plan file
-2. Extract COSIGN_SIGNATURE from HTML comment header (line 3)
-3. Strip lines 1-5 (HTML comment) and [COSIGN_SIGNATURE: ...] footer
-4. Canonicalize remaining content (trim lines, normalize whitespace)
-5. Verify signature using cosign (ECDSA P-256) with provided public key
-   - Cosign library: @sigstore/cosign
-   - Algorithm: ECDSA P-256 (secp256r1)
-   - Input: canonicalized plan content
-   - Signature format: base64-encoded
-6. IF VERIFICATION FAILS: STOP and report failure
-7. IF NO SIGNATURE IN PLAN: STOP and report failure
-```
+You DO NOT need to manually run `sha256sum` or verify the ECDSA signature yourself in `bash`.
+The `write_file` tool has been upgraded to **automatically and rigorously** verify the cryptographic `COSIGN_SIGNATURE` mathematically using the public key from `.atlas-gate/.cosign-keys/public.pem`. 
 
-**Implementation**: Use cosign's `verifyBlob()` function with:
-- `payload`: Buffer of canonicalized plan content
-- `signature`: Buffer of base64-decoded COSIGN_SIGNATURE value
-- `keyPath`: Path to cosign public key (e.g., `.cosign/cosign.pub`)
+**All you need to do is pass the `Plan Hash` or `COSIGN_SIGNATURE` as the `plan` parameter to `write_file`. The ATLAs-GATE-MCP handles all security governance computationally.**
 
-### Step 2: Section Validation
-
-Verify plan has all 7 required sections:
-- Plan Metadata
-- Scope & Constraints
-- Phase Definitions
-- Path Allowlist
-- Verification Gates
-- Forbidden Actions
-- Rollback / Failure Policy
-
-**If ANY missing** → STOP and report.
-
-### Step 3: Parse Path Allowlist
+### Step 2: Extract Path Allowlist
 
 Extract all paths from "Path Allowlist" section.
 Example:

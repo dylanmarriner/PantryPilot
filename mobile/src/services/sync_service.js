@@ -26,8 +26,9 @@ class SyncService {
 
   // Setup network status listener
   setupNetworkListener() {
-    // In a real implementation, this would use @react-native-community/netinfo
-    // For now, we'll assume online status
+    // Network status initialized as online
+    // Real implementation would use react-native-netinfo or similar
+    // For now, network status is managed through sync operation failures
     this.isOnline = true;
   }
 
